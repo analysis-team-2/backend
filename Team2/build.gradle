@@ -9,9 +9,9 @@ group = 'Analysis'
 version = '0.0.1-SNAPSHOT'
 
 application {
-	// 메인 클래스 설정
-	mainClass = 'com.analysis.Team2Application'
+	mainClass = 'Analysis.Team2.Team2Application'
 }
+
 
 java {
 	toolchain {
@@ -48,16 +48,8 @@ tasks.named('test') {
 }
 
 // JAR 작업 구성 추가
-jar {
-	enabled = true
-	archiveBaseName = 'AnalysisApp'
-	archiveVersion = '0.0.1'
-	from {
-		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-	}
-	manifest {
-		attributes 'Main-Class': 'com.analysis.Team2Application'
-	}
-	duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
+
+bootJar {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
