@@ -378,4 +378,41 @@ public class AnalysisService {
             return result;
         });
     }
+
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getCustomerPercentageChangeAsync(String cityNm, String admiNm, String tpbuzNm1, String tpbuzNm2) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call get_customer_percentage_change(?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, cityNm);
+                cstmt.setString(2, admiNm);
+                cstmt.setString(3, tpbuzNm1);
+                cstmt.setString(4, tpbuzNm2);
+                cstmt.registerOutParameter(5, Types.REF_CURSOR);
+
+                cstmt.execute();
+
+                try (ResultSet rs = (ResultSet) cstmt.getObject(5)) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("sex", rs.getString("sex").trim()); // 공백 제거
+                        row.put("age", rs.getString("age").trim()); // 공백 제거
+                        row.put("totalCntPrevious", rs.getInt("total_cnt_previous"));
+                        row.put("totalCntCurrent", rs.getInt("total_cnt_current"));
+                        row.put("percentageChange", rs.getDouble("percentage_change"));
+                        result.add(row);
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
 }
