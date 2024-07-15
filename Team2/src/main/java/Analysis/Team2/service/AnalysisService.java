@@ -243,4 +243,73 @@ public class AnalysisService {
         });
     }
 
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getYearAmtAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call proc_year_amt(?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, city);
+                cstmt.setString(2, dong);
+                cstmt.setString(3, primaryBusiness);
+                cstmt.setString(4, secondaryBusiness);
+                cstmt.registerOutParameter(5, Types.REF_CURSOR);
+
+                cstmt.execute();
+
+                try (ResultSet rs = (ResultSet) cstmt.getObject(5)) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("v_ta_ymd", rs.getString(1));
+                        row.put("v_amt", rs.getInt(2));
+                        result.add(row);
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
+
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getUnitPriceCntAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call proc_unit_price_cnt(?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, city);
+                cstmt.setString(2, dong);
+                cstmt.setString(3, primaryBusiness);
+                cstmt.setString(4, secondaryBusiness);
+                cstmt.registerOutParameter(5, Types.REF_CURSOR);
+
+                cstmt.execute();
+
+                try (ResultSet rs = (ResultSet) cstmt.getObject(5)) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("v_ta_ymd", rs.getString(1));
+                        row.put("v_cnt", rs.getInt(2));
+                        row.put("v_unit_price", rs.getDouble(3));
+                        result.add(row);
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
+
 }

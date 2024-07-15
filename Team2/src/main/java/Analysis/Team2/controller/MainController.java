@@ -36,9 +36,11 @@ public class MainController {
         CompletableFuture<Map<String, String>> indicatorFuture = analysisService.getIndicatorAsync(city, dong);
         CompletableFuture<Map<String, Integer>> merchantFuture = analysisService.getMerchantAsync(city, dong, category1, category2);
         CompletableFuture<List<Map<String, Object>>> merchantCntFuture = analysisService.getMerchantCntAsync(city, dong, category1, category2);
+        CompletableFuture<List<Map<String, Object>>> yearAmtFuture = analysisService.getYearAmtAsync(city, dong, category1, category2);
+        CompletableFuture<List<Map<String, Object>>> unitPriceCntFuture = analysisService.getUnitPriceCntAsync(city, dong, category1, category2);
 
         // 모든 비동기 작업이 완료될 때까지 기다림
-        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture)
+        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture)
                 .thenApply(v -> {
                     // 데이터 처리
                     List<Map<String, Object>> daySalesData = daySalesFuture.join();
@@ -48,6 +50,8 @@ public class MainController {
                     Map<String, String> indicator = indicatorFuture.join();
                     Map<String, Integer> merchantData = merchantFuture.join();
                     List<Map<String, Object>> merchantCntData = merchantCntFuture.join();
+                    List<Map<String, Object>> yearAmtData = yearAmtFuture.join();
+                    List<Map<String, Object>> unitPriceCntData = unitPriceCntFuture.join();
 
 
                     JSONArray daySalesArray = new JSONArray();
@@ -82,6 +86,22 @@ public class MainController {
                         merchantCntJSON.put("상가수", merchantCnt.get("v_mer_cnt"));
                         merchantCntArray.put(merchantCntJSON);
                     }
+                    JSONArray yearAmtArray = new JSONArray();
+                    for (Map<String, Object> yearAmt : yearAmtData) {
+                        JSONObject yearAmtJSON = new JSONObject();
+                        yearAmtJSON.put("년월", yearAmt.get("v_ta_ymd"));
+                        yearAmtJSON.put("월매출액합계", yearAmt.get("v_amt"));
+                        yearAmtArray.put(yearAmtJSON);
+                    }
+
+                    JSONArray unitPriceCntArray = new JSONArray();
+                    for (Map<String, Object> unitPriceCnt : unitPriceCntData) {
+                        JSONObject unitPriceCntJSON = new JSONObject();
+                        unitPriceCntJSON.put("년월", unitPriceCnt.get("v_ta_ymd"));
+                        unitPriceCntJSON.put("매출건수", unitPriceCnt.get("v_cnt"));
+                        unitPriceCntJSON.put("상가당매출액(평균)", unitPriceCnt.get("v_unit_price"));
+                        unitPriceCntArray.put(unitPriceCntJSON);
+                    }
 
                     JSONObject responseJSON = new JSONObject();
                     if (!genderAgeArray.isEmpty()) {
@@ -92,6 +112,8 @@ public class MainController {
                         responseJSON.put("indicator", new JSONObject(indicator)); // indicator 정보 추가
                         responseJSON.put("merchantData", new JSONObject(merchantData));
                         responseJSON.put("merchantCntData", merchantCntArray);
+                        responseJSON.put("yearAmtData", yearAmtArray);
+                        responseJSON.put("unitPriceCntData", unitPriceCntArray);
                         responseJSON.put("status", "success");
                         responseJSON.put("message", "데이터 전달 성공");
                         return ResponseEntity.ok(responseJSON.toString());
