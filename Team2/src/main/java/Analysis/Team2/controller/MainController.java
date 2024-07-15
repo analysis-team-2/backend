@@ -1,7 +1,9 @@
 package Analysis.Team2.controller;
 
+import Analysis.Team2.service.AnalysisService;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -9,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/analysis")
 public class MainController {
 
+    @Autowired
+    AnalysisService analysisService;
     @PostMapping("/main")
     public String mainRequest(@RequestBody String requestBody) {
         JSONObject jsonRequest = new JSONObject(requestBody);
@@ -20,8 +24,9 @@ public class MainController {
 //        System.out.println(address);
 //        System.out.println(category);
 
-        // category에 맞는 통계 데이터를 db에서 가져오는 service 함수 생성
 
+
+        System.out.println(analysisService.getDaySales(city, dong, category1, category2));
 
 
 

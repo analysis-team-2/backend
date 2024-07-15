@@ -32,6 +32,7 @@ public class RentalPropertyService {
                     propertyJSON.put("contractSpace", property.getContractSpace());
                     propertyJSON.put("availSpace", property.getAvailSpace());
                     propertyJSON.put("address", property.getAddress());
+                    responseJSON.put("legalDongName", dongName);
                     responseJSON.append("properties", propertyJSON);
                 }
             }

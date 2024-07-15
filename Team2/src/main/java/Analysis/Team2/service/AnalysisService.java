@@ -1,15 +1,16 @@
 package Analysis.Team2.service;
 
+import org.hibernate.dialect.OracleTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AnalysisService {
@@ -48,4 +49,38 @@ public class AnalysisService {
 
         return amount;
     }
+    public List<Map<String, Object>> getDaySales(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
+        DataSource dataSource = jdbcTemplate.getDataSource();
+        List<Map<String, Object>> daySales = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             CallableStatement cstmt = conn.prepareCall("{call Get_Day_Sales_Proc(?, ?, ?, ?, ?)}")) {
+
+            cstmt.setString(1, city);
+            cstmt.setString(2, adminiDistrict);
+            cstmt.setString(3, primaryBusiness);
+            cstmt.setString(4, secondaryBusiness);
+            cstmt.registerOutParameter(5, Types.ARRAY, "DAY_SALES_TAB");
+
+            cstmt.execute();
+
+            try (ResultSet rs = cstmt.getArray(5).getResultSet()) {
+                while (rs.next()) {
+                    Struct row = (Struct) rs.getObject(2);
+                    Object[] attrs = row.getAttributes();
+                    Map<String, Object> saleData = new HashMap<>();
+                    saleData.put("day", attrs[0]);
+                    saleData.put("totalAmt", attrs[1]);
+                    daySales.add(saleData);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return daySales;
+    }
+
+
+
 }
