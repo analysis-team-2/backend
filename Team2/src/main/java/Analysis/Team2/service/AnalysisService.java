@@ -98,4 +98,41 @@ public class AnalysisService {
         });
     }
 
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getHourlySalesAsync(String city, String adminDistrict, String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            DataSource dataSource = jdbcTemplate.getDataSource();
+            List<Map<String, Object>> hourlySales = new ArrayList<>();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call Get_Hourly_Sales_Proc(?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, city);
+                cstmt.setString(2, adminDistrict);
+                cstmt.setString(3, primaryBusiness);
+                cstmt.setString(4, secondaryBusiness);
+                cstmt.registerOutParameter(5, Types.ARRAY, "SALES_TAB");
+
+                cstmt.execute();
+
+                try (ResultSet rs = cstmt.getArray(5).getResultSet()) {
+                    while (rs.next()) {
+                        Struct row = (Struct) rs.getObject(2);
+                        Object[] attrs = row.getAttributes();
+                        Map<String, Object> saleData = new HashMap<>();
+                        saleData.put("hourLabel", attrs[0]);
+                        saleData.put("amtPercentage", attrs[1]);
+                        saleData.put("cntPercentage", attrs[2]);
+                        hourlySales.add(saleData);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+            return hourlySales;
+        });
+    }
+
+
 }
