@@ -264,7 +264,7 @@ public class AnalysisService {
                     while (rs.next()) {
                         Map<String, Object> row = new HashMap<>();
                         row.put("v_ta_ymd", rs.getString(1));
-                        row.put("v_amt", rs.getInt(2));
+                        row.put("v_amt", rs.getLong(2));
                         result.add(row);
                     }
                 }
