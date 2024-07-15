@@ -415,4 +415,39 @@ public class AnalysisService {
             return result;
         });
     }
+
+    @Async
+    public CompletableFuture<Map<String, Object>> getFullBusinessAnalysisAsync(String cityNm, String admiNm, String buzMajorNm, String buzMinorNm) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Object> result = new HashMap<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call full_business_analysis(?, ?, ?, ?, ?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, cityNm);
+                cstmt.setString(2, admiNm);
+                cstmt.setString(3, buzMajorNm);
+                cstmt.setString(4, buzMinorNm);
+                cstmt.registerOutParameter(5, Types.VARCHAR);
+                cstmt.registerOutParameter(6, Types.NUMERIC);
+                cstmt.registerOutParameter(7, Types.VARCHAR);
+                cstmt.registerOutParameter(8, Types.NUMERIC);
+                cstmt.registerOutParameter(9, Types.VARCHAR);
+
+                cstmt.execute();
+
+                result.put("consequent", cstmt.getString(5));
+                result.put("selectedDistrictCount", cstmt.getInt(6));
+                result.put("maxDistrict", cstmt.getString(7));
+                result.put("maxMerCount", cstmt.getInt(8));
+                result.put("maxDistrictName", cstmt.getString(9));
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
 }

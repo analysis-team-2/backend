@@ -41,9 +41,10 @@ public class MainController {
         CompletableFuture<List<Map<String, Object>>> recentMonthlySalesFuture = analysisService.getRecentMonthlySalesAsync(city, dong, category1, category2);
         CompletableFuture<List<Map<String, Object>>> averageFlowpopFuture = analysisService.getAverageFlowpopAsync(city, dong);
         CompletableFuture<List<Map<String, Object>>> customerPercentageChangeFuture = analysisService.getCustomerPercentageChangeAsync(city, dong, category1, category2);
+        CompletableFuture<Map<String, Object>> fullBusinessAnalysisFuture = analysisService.getFullBusinessAnalysisAsync(city, dong, category1, category2);
 
         // 모든 비동기 작업이 완료될 때까지 기다림
-        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture, recentMonthlySalesFuture, averageFlowpopFuture, customerPercentageChangeFuture)
+        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture, recentMonthlySalesFuture, averageFlowpopFuture, customerPercentageChangeFuture, fullBusinessAnalysisFuture)
                 .thenApply(v -> {
                     // 데이터 처리
                     List<Map<String, Object>> daySalesData = daySalesFuture.join();
@@ -58,6 +59,7 @@ public class MainController {
                     List<Map<String, Object>> recentMonthlySalesData = recentMonthlySalesFuture.join();
                     List<Map<String, Object>> averageFlowpopData = averageFlowpopFuture.join();
                     List<Map<String, Object>> customerPercentageChangeData = customerPercentageChangeFuture.join();
+                    Map<String, Object> fullBusinessAnalysisData = fullBusinessAnalysisFuture.join();
 
 
                     JSONArray daySalesArray = new JSONArray();
@@ -137,12 +139,14 @@ public class MainController {
                         customerPercentageChangeArray.put(customerChangeJSON);
                     }
 
+
+
                     JSONObject responseJSON = new JSONObject();
                     if (!genderAgeArray.isEmpty()) {
                         responseJSON.put("genderAgeDistribution", genderAgeArray);
                         responseJSON.put("daySales", daySalesArray);
                         responseJSON.put("hourlySales", hourlySalesArray);
-                        responseJSON.put("associationCategory", maxLiftConsequent);
+//                        responseJSON.put("associationCategory", maxLiftConsequent);
                         responseJSON.put("indicator", new JSONObject(indicator)); // indicator 정보 추가
                         responseJSON.put("merchantData", new JSONObject(merchantData));
                         responseJSON.put("merchantCntData", merchantCntArray);
@@ -151,6 +155,7 @@ public class MainController {
                         responseJSON.put("recentMonthlySales", recentMonthlySalesArray);
                         responseJSON.put("averageFlowpop", averageFlowpopArray);
                         responseJSON.put("customerPercentageChange", customerPercentageChangeArray);
+                        responseJSON.put("fullBusinessAnalysis", new JSONObject(fullBusinessAnalysisData));
                         responseJSON.put("status", "success");
                         responseJSON.put("message", "데이터 전달 성공");
                         return ResponseEntity.ok(responseJSON.toString());
