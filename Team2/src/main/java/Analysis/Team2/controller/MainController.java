@@ -12,11 +12,13 @@ public class MainController {
     @PostMapping("/main")
     public String mainRequest(@RequestBody String requestBody) {
         JSONObject jsonRequest = new JSONObject(requestBody);
-        String address = jsonRequest.getString("address");
-        String category = jsonRequest.getString("category");
+        String city = jsonRequest.getString("region_city");
+        String dong = jsonRequest.getString("region_dong");
+        String category1 = jsonRequest.getString("category1");
+        String category2 = jsonRequest.getString("category2");
         JSONArray customerAgeArray = jsonRequest.getJSONArray("customerAge");
-        System.out.println(address);
-        System.out.println(category);
+//        System.out.println(address);
+//        System.out.println(category);
 
         // category에 맞는 통계 데이터를 db에서 가져오는 service 함수 생성
 
