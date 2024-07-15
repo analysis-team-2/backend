@@ -134,5 +134,50 @@ public class AnalysisService {
         });
     }
 
+    public CompletableFuture<String> getMaxLiftConsequentAsync(String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            DataSource dataSource = jdbcTemplate.getDataSource();
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call proc_get_max_lift_consequent(?, ?, ?)}")) {
+
+                cstmt.setString(1, primaryBusiness);
+                cstmt.setString(2, secondaryBusiness);
+                cstmt.registerOutParameter(3, Types.VARCHAR);
+
+                cstmt.execute();
+
+                return cstmt.getString(3);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Async
+    public CompletableFuture<Map<String, String>> getIndicatorAsync(String city_nm, String dong_nm) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, String> results = new HashMap<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call proc_indicator(?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, city_nm);
+                cstmt.setString(2, dong_nm);
+                cstmt.registerOutParameter(3, Types.VARCHAR);
+                cstmt.registerOutParameter(4, Types.VARCHAR);
+
+                cstmt.execute();
+
+                results.put("v_code", cstmt.getString(3));
+                results.put("v_desc", cstmt.getString(4));
+                return results;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+
+
 
 }
