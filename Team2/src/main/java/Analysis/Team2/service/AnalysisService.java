@@ -177,7 +177,70 @@ public class AnalysisService {
         });
     }
 
+    @Async
+    public CompletableFuture<Map<String, Integer>> getMerchantAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Integer> result = new HashMap<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call proc_merchant(?, ?, ?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, city);
+                cstmt.setString(2, dong);
+                cstmt.setString(3, primaryBusiness);
+                cstmt.setString(4, secondaryBusiness);
+                cstmt.registerOutParameter(5, Types.INTEGER);
+                cstmt.registerOutParameter(6, Types.INTEGER);
+                cstmt.registerOutParameter(7, Types.INTEGER);
+
+                cstmt.execute();
+
+                result.put("상가수비율", cstmt.getInt(5));
+                result.put("휴업수비율", cstmt.getInt(6));
+                result.put("폐업수비율", cstmt.getInt(7));
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
 
 
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getMerchantCntAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call proc_merchant_cnt(?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, city);
+                cstmt.setString(2, dong);
+                cstmt.setString(3, primaryBusiness);
+                cstmt.setString(4, secondaryBusiness);
+                cstmt.registerOutParameter(5, Types.REF_CURSOR);
+
+                cstmt.execute();
+
+                try (ResultSet rs = (ResultSet) cstmt.getObject(5)) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("v_ta_ym", rs.getString(1));
+                        row.put("v_mer_cnt", rs.getInt(2));
+                        result.add(row);
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
 
 }
