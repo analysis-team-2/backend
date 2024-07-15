@@ -312,4 +312,70 @@ public class AnalysisService {
         });
     }
 
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getRecentMonthlySalesAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call get_recent_monthly_sales(?, ?, ?, ?, ?)}")) {
+
+                cstmt.setString(1, city);
+                cstmt.setString(2, dong);
+                cstmt.setString(3, primaryBusiness);
+                cstmt.setString(4, secondaryBusiness);
+                cstmt.registerOutParameter(5, OracleTypes.CURSOR);
+
+                cstmt.execute();
+
+                try (ResultSet rs = (ResultSet) cstmt.getObject(5)) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("salesMonth", rs.getString("sales_month"));
+                        row.put("totalSales", rs.getInt("total_sales"));
+                        result.add(row);
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
+
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getAverageFlowpopAsync(String city, String dong) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
+
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call get_average_flowpop(?, ?, ?)}")) {
+
+                cstmt.setString(1, city);
+                cstmt.setString(2, dong);
+                cstmt.registerOutParameter(3, OracleTypes.CURSOR);
+
+                cstmt.execute();
+
+                try (ResultSet rs = (ResultSet) cstmt.getObject(3)) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("ageGroup", rs.getString("age_group"));
+                        row.put("mCntAvg", rs.getInt("M_CNT_AVG"));
+                        row.put("fCntAvg", rs.getInt("F_CNT_AVG"));
+                        result.add(row);
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return result;
+        });
+    }
 }

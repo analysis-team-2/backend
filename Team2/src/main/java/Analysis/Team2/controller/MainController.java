@@ -38,9 +38,11 @@ public class MainController {
         CompletableFuture<List<Map<String, Object>>> merchantCntFuture = analysisService.getMerchantCntAsync(city, dong, category1, category2);
         CompletableFuture<List<Map<String, Object>>> yearAmtFuture = analysisService.getYearAmtAsync(city, dong, category1, category2);
         CompletableFuture<List<Map<String, Object>>> unitPriceCntFuture = analysisService.getUnitPriceCntAsync(city, dong, category1, category2);
+        CompletableFuture<List<Map<String, Object>>> recentMonthlySalesFuture = analysisService.getRecentMonthlySalesAsync(city, dong, category1, category2);
+        CompletableFuture<List<Map<String, Object>>> averageFlowpopFuture = analysisService.getAverageFlowpopAsync(city, dong);
 
         // 모든 비동기 작업이 완료될 때까지 기다림
-        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture)
+        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture, recentMonthlySalesFuture, averageFlowpopFuture)
                 .thenApply(v -> {
                     // 데이터 처리
                     List<Map<String, Object>> daySalesData = daySalesFuture.join();
@@ -52,6 +54,8 @@ public class MainController {
                     List<Map<String, Object>> merchantCntData = merchantCntFuture.join();
                     List<Map<String, Object>> yearAmtData = yearAmtFuture.join();
                     List<Map<String, Object>> unitPriceCntData = unitPriceCntFuture.join();
+                    List<Map<String, Object>> recentMonthlySalesData = recentMonthlySalesFuture.join();
+                    List<Map<String, Object>> averageFlowpopData = averageFlowpopFuture.join();
 
 
                     JSONArray daySalesArray = new JSONArray();
@@ -103,6 +107,23 @@ public class MainController {
                         unitPriceCntArray.put(unitPriceCntJSON);
                     }
 
+                    JSONArray recentMonthlySalesArray = new JSONArray();
+                    for (Map<String, Object> monthlySale : recentMonthlySalesData) {
+                        JSONObject monthlySaleJSON = new JSONObject();
+                        monthlySaleJSON.put("salesMonth", monthlySale.get("salesMonth"));
+                        monthlySaleJSON.put("totalSales", monthlySale.get("totalSales"));
+                        recentMonthlySalesArray.put(monthlySaleJSON);
+                    }
+
+                    JSONArray averageFlowpopArray = new JSONArray();
+                    for (Map<String, Object> flowpop : averageFlowpopData) {
+                        JSONObject flowpopJSON = new JSONObject();
+                        flowpopJSON.put("ageGroup", flowpop.get("ageGroup"));
+                        flowpopJSON.put("mCntAvg", flowpop.get("mCntAvg"));
+                        flowpopJSON.put("fCntAvg", flowpop.get("fCntAvg"));
+                        averageFlowpopArray.put(flowpopJSON);
+                    }
+
                     JSONObject responseJSON = new JSONObject();
                     if (!genderAgeArray.isEmpty()) {
                         responseJSON.put("genderAgeDistribution", genderAgeArray);
@@ -114,6 +135,8 @@ public class MainController {
                         responseJSON.put("merchantCntData", merchantCntArray);
                         responseJSON.put("yearAmtData", yearAmtArray);
                         responseJSON.put("unitPriceCntData", unitPriceCntArray);
+                        responseJSON.put("recentMonthlySales", recentMonthlySalesArray);
+                        responseJSON.put("averageFlowpop", averageFlowpopArray);
                         responseJSON.put("status", "success");
                         responseJSON.put("message", "데이터 전달 성공");
                         return ResponseEntity.ok(responseJSON.toString());
