@@ -33,15 +33,17 @@ public class MainController {
         CompletableFuture<List<Map<String, Object>>> genderAgeDataFuture = analysisService.getGenderAgeDistributionAsync(city, dong, category1, category2);
         CompletableFuture<List<Map<String, Object>>> hourlySalesFuture = analysisService.getHourlySalesAsync(city, dong, category1, category2);
         CompletableFuture<String> maxLiftConsequentFuture = analysisService.getMaxLiftConsequentAsync(category1, category2);
+        CompletableFuture<Map<String, String>> indicatorFuture = analysisService.getIndicatorAsync(city, dong);
 
         // 모든 비동기 작업이 완료될 때까지 기다림
-        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture)
+        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, indicatorFuture)
                 .thenApply(v -> {
                     // 데이터 처리
                     List<Map<String, Object>> daySalesData = daySalesFuture.join();
                     List<Map<String, Object>> genderAgeData = genderAgeDataFuture.join();
                     List<Map<String, Object>> hourlySalesData = hourlySalesFuture.join();
                     String maxLiftConsequent = maxLiftConsequentFuture.join();
+                    Map<String, String> indicator = indicatorFuture.join();
 
 
                     JSONArray daySalesArray = new JSONArray();
@@ -76,6 +78,7 @@ public class MainController {
                         responseJSON.put("daySales", daySalesArray);
                         responseJSON.put("hourlySales", hourlySalesArray);
                         responseJSON.put("associationCategory", maxLiftConsequent);
+                        responseJSON.put("indicator", new JSONObject(indicator)); // indicator 정보 추가
                         responseJSON.put("status", "success");
                         responseJSON.put("message", "데이터 전달 성공");
                         return ResponseEntity.ok(responseJSON.toString());
