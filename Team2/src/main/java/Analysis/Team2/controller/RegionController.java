@@ -1,17 +1,19 @@
 package Analysis.Team2.controller;
 
-import Analysis.Team2.service.AnalysisService;
-import Analysis.Team2.service.BankBranchService;
-import Analysis.Team2.service.RentalPropertyService;
-import Analysis.Team2.service.TimeSlotsService;
+import Analysis.Team2.model.CItyPosition;
+import Analysis.Team2.repository.CityPositionRepository;
+import Analysis.Team2.service.*;
 import Analysis.Team2.utils.DongConverter;
 import jdk.swing.interop.SwingInterOpUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -28,6 +30,8 @@ public class RegionController {
     private DongConverter dongConverter;
     @Autowired
     private AnalysisService analysisService;
+    @Autowired
+    private RegionService regionService;
 
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PostMapping("/region/{cityname}")
@@ -47,10 +51,30 @@ public class RegionController {
             rentalPropertyService.addRentalPropertiesToResponse(legalDong, responseJSON);
         });
         CompletableFuture<Void> timeslotFuture = CompletableFuture.runAsync(() -> timeslotService.addTimeslotsToResponse(responseJSON));
-        CompletableFuture<Void> oneMonthSalesAmount = CompletableFuture.supplyAsync(() -> analysisService.getMonthlySalesAmount(cityName, dongName, category1, category2))
-                .thenAccept(salesAmount -> responseJSON.put("salesAmount", salesAmount));
+        CompletableFuture<Void> cityPositionsFuture = CompletableFuture.runAsync(() -> {
+            List<CItyPosition> cityPositions = regionService.getCityPositions(cityName);
+            JSONArray positionsArray = new JSONArray();
+            List<CompletableFuture<Void>> salesFutures = new ArrayList<>();
 
-        CompletableFuture.allOf(bankBranchFuture, rentalPropertyFuture, timeslotFuture, oneMonthSalesAmount).join(); // 모든 비동기 작업 완료 대기
+            for (CItyPosition position : cityPositions) {
+                CompletableFuture<Void> salesFuture = CompletableFuture.supplyAsync(() ->
+                                analysisService.getMonthlySalesAmount(cityName, position.getDongName(), category1, category2))
+                        .thenAccept(salesAmount -> {
+                            JSONObject positionJSON = new JSONObject();
+                            positionJSON.put("lat", position.getLat());
+                            positionJSON.put("lng", position.getLng());
+                            positionJSON.put("dongName", position.getDongName());
+                            positionJSON.put("salesAmount", salesAmount);
+                            positionsArray.put(positionJSON);
+                        });
+                salesFutures.add(salesFuture);
+            }
+
+            CompletableFuture.allOf(salesFutures.toArray(new CompletableFuture[0])).join();
+            responseJSON.put("dongPositions", positionsArray);
+        });
+
+        CompletableFuture.allOf(bankBranchFuture, rentalPropertyFuture, timeslotFuture, cityPositionsFuture).join(); // 모든 비동기 작업 완료 대기
 
         if (responseJSON.has("branches") && responseJSON.getJSONArray("branches").length() > 0) {
             return ResponseEntity.ok(responseJSON.toString());
