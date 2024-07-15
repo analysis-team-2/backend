@@ -57,8 +57,7 @@ public class RegionController {
             List<CompletableFuture<Void>> salesFutures = new ArrayList<>();
 
             for (CItyPosition position : cityPositions) {
-                CompletableFuture<Void> salesFuture = CompletableFuture.supplyAsync(() ->
-                                analysisService.getMonthlySalesAmount(cityName, position.getDongName(), category1, category2))
+                CompletableFuture<Void> salesFuture = analysisService.getMonthlySalesAmountAsync(cityName, position.getDongName(), category1, category2)
                         .thenAccept(salesAmount -> {
                             JSONObject positionJSON = new JSONObject();
                             positionJSON.put("lat", position.getLat());
@@ -69,7 +68,6 @@ public class RegionController {
                         });
                 salesFutures.add(salesFuture);
             }
-
             CompletableFuture.allOf(salesFutures.toArray(new CompletableFuture[0])).join();
             responseJSON.put("dongPositions", positionsArray);
         });
