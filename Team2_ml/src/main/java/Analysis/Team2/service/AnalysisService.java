@@ -544,7 +544,7 @@ public class AnalysisService {
             try {
                 // JSON 데이터 생성
                 String jsonData = objectMapper.writeValueAsString(input);
-
+                System.out.println(jsonData);
                 // 파이썬 스크립트 실행 명령어
                 String[] command = new String[]{"python", pythonScriptPath, jsonData};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
