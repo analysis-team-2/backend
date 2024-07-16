@@ -542,12 +542,13 @@ public class AnalysisService {
             Map<String, Object> result = new HashMap<>();
 
             try {
-                String jsonData = objectMapper.writeValueAsString(input);
+                // 대괄호를 제거하여 JSON 데이터 생성
+                String jsonData = objectMapper.writeValueAsString(input)
+                        .replace("[", "")
+                        .replace("]", "");
 
                 // 파이썬 스크립트 실행 명령어
                 String[] command = new String[]{"python", pythonScriptPath, jsonData};
-                System.out.println("jsondata check asdfadfsa");
-                System.out.println(jsonData);
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
@@ -578,6 +579,7 @@ public class AnalysisService {
             return result;
         });
     }
+
 
 }
 
