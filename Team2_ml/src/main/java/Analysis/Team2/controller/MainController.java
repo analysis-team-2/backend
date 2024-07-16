@@ -64,15 +64,15 @@ public class MainController {
                     List<Map<String, Object>> estimatedAmtData = estimatedAmtFuture.join();
 
                     Map<String, Object> predictionInput = new HashMap<>();
-                    for (Map<String, Object> amt : estimatedAmtData) {
+                    if (!estimatedAmtData.isEmpty()) {
                         Map<String, Object> data = estimatedAmtData.get(0);
                         predictionInput.put("admi_cty_no", new Long[]{(Long) data.get("admiNum")});
                         predictionInput.put("card_tpbuz_cd", new String[]{(String) data.get("tpbuzNum")});
-                        predictionInput.put("amt", new int[]{(int) data.get("amt")});
-                        predictionInput.put("cnt", new Double[]{(Double) data.get("cnt")});
-                        predictionInput.put("TOTAL_POPULATION", new Double[]{(Double) data.get("totalPop")});
-                        predictionInput.put("store_avg_period", new Double[]{(Double) data.get("operPer")});
-                        predictionInput.put("shutdown_avg_period", new Double[]{(Double) data.get("closPer")});
+                        predictionInput.put("amt", new int[]{((Number) data.get("amt")).intValue()});
+                        predictionInput.put("cnt", new Double[]{((Number) data.get("cnt")).doubleValue()});
+                        predictionInput.put("TOTAL_POPULATION", new Double[]{((Number) data.get("totalPop")).doubleValue()});
+                        predictionInput.put("store_avg_period", new Double[]{((Number) data.get("operPer")).doubleValue()});
+                        predictionInput.put("shutdown_avg_period", new Double[]{((Number) data.get("closPer")).doubleValue()});
                         predictionInput.put("changing_tag", new String[]{(String) data.get("indc")});
                     }
 

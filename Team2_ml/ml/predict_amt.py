@@ -1,6 +1,7 @@
 import json
 import sys
 import pandas as pd
+import io
 from autogluon.tabular import TabularDataset, TabularPredictor
 
 def main():

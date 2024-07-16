@@ -540,30 +540,24 @@ public class AnalysisService {
             String pythonScriptPath = "ml/predict_amt.py";
             ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> result = new HashMap<>();
-
             try {
                 String jsonData = objectMapper.writeValueAsString(input);
-
                 String[] command = new String[]{"python", pythonScriptPath, jsonData};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
-
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
                 StringBuilder output = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     output.append(line);
                 }
-
                 int exitCode = process.waitFor();
                 System.out.println("Exited with code: " + exitCode);
-
                 result = objectMapper.readValue(output.toString(), Map.class);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
             return result;
         });
     }
