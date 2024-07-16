@@ -3,8 +3,11 @@ import sys
 import pandas as pd
 import io
 from autogluon.tabular import TabularDataset, TabularPredictor
+import os
 
 def main():
+    current_path = os.getcwd()
+    print("Current working directory:", current_path)
     if len(sys.argv) < 2:
         print(json.dumps({"status": "error", "message": "No input data provided"}, ensure_ascii=False))
         return
