@@ -22,7 +22,7 @@ def main():
         df_predict = TabularDataset(df_predict)
         # 운영점포평균영업기간의 값만 조회
         operating_avg_period = df_predict['store_avg_period'].values[0]
-        predictor2 = TabularPredictor.load(r"ag-20240715_073451")
+        predictor2 = TabularPredictor.load(r"ml/ag-20240715_073451")
         y_pred = predictor2.predict(df_predict.drop(columns=['amt']))
 
         # 결과를 JSON 형태로 반환
