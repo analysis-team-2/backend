@@ -17,6 +17,7 @@ public class WebConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.addAllowedOrigin("http://localhost:3000"); // React 앱의 주소
+        config.addAllowedOrigin("http://changdoc.s3-website-ap-southeast-1.amazonaws.com"); // S3 프론트엔드 주소 추가
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
