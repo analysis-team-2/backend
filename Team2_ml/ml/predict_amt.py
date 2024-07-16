@@ -12,9 +12,7 @@ def main():
     logging.getLogger("autogluon.core").setLevel(logging.CRITICAL)
     logging.getLogger("autogluon.tabular").setLevel(logging.CRITICAL)
 
-    # 표준 출력 및 표준 에러 출력 비활성화
-    sys.stdout = open(os.devnull, 'w')
-    sys.stderr = open(os.devnull, 'w')
+
 
 
     if len(sys.argv) < 2:
