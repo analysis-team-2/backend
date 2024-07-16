@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
+@CrossOrigin(origins = "http://http://changdoc.s3-website-ap-southeast-1.amazonaws.com/:3000", allowCredentials = "true")
 @RequestMapping("/analysis")
 public class TimeSlotsController {
 
     @Autowired
     private TimeSlotsService timeslotService;
 
-    @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PostMapping("/reservation/{bank_id}")
     @Async
     public CompletableFuture<ResponseEntity<String>> reserveTimeSlot(@PathVariable("bank_id") String branchId, @RequestBody String requestBody) {

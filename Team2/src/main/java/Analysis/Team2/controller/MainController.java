@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "http://http://changdoc.s3-website-ap-southeast-1.amazonaws.com/:3000", allowCredentials = "true")
 @RequestMapping("/analysis")
 public class MainController {
 

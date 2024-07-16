@@ -9,12 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@CrossOrigin(origins = "http://http://changdoc.s3-website-ap-southeast-1.amazonaws.com/:3000", allowCredentials = "true")
 @RequestMapping("/analysis")
 public class UsersController {
     @Autowired
     private UserService userService;
 
-    @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PostMapping("/signup")
     public ResponseEntity<String> signup(@RequestBody String requestBody) {
         try {
@@ -47,7 +47,6 @@ public class UsersController {
         }
     }
 
-    @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PostMapping("/login")
     public ResponseEntity<String> loginRequest(@RequestBody String requestBody) {
         JSONObject jsonRequest = new JSONObject(requestBody);

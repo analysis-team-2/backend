@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
+@CrossOrigin(origins = "http://http://changdoc.s3-website-ap-southeast-1.amazonaws.com/:3000", allowCredentials = "true")
 @RequestMapping("/analysis")
 public class RegionController {
 
@@ -33,7 +34,6 @@ public class RegionController {
     @Autowired
     private RegionService regionService;
 
-    @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PostMapping("/region/{cityname}")
     public ResponseEntity<String> requestRegion(@PathVariable String cityname, @RequestBody String requestBody) {
         JSONObject jsonRequest = new JSONObject(requestBody);
