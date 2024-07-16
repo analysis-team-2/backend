@@ -22,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private static final String API_KEY = System.getenv("API_KEY");
-
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -408,8 +406,6 @@ public class AnalysisService {
                         Map<String, Object> row = new HashMap<>();
                         row.put("sex", rs.getString("sex").trim()); // 공백 제거
                         row.put("age", rs.getString("age").trim()); // 공백 제거
-                        row.put("totalCntPrevious", rs.getInt("total_cnt_previous"));
-                        row.put("totalCntCurrent", rs.getInt("total_cnt_current"));
                         row.put("percentageChange", rs.getDouble("percentage_change"));
                         result.add(row);
                     }
@@ -484,5 +480,77 @@ public class AnalysisService {
             }
         });
     }
+
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getEstimatedAmt(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
+        DataSource dataSource = jdbcTemplate.getDataSource();
+
+        Long admiNum = null;
+        String tpbuzNum = null;
+        Double cnt = null;
+        Double totalPop = null;
+        Double operPer = null;
+        Double closPer = null;
+        String indc = null;
+
+        try (Connection conn = dataSource.getConnection();
+             CallableStatement callableStatement = conn.prepareCall("{ call proc_estimated_amt(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) }")) {
+
+            // 입력 파라미터 설정
+            callableStatement.setString(1, city);
+            callableStatement.setString(2, adminiDistrict);
+            callableStatement.setString(3, primaryBusiness);
+            callableStatement.setString(4, secondaryBusiness);
+
+            // 출력 파라미터 설정
+            callableStatement.registerOutParameter(5, Types.NUMERIC);
+            callableStatement.registerOutParameter(6, Types.VARCHAR);
+            callableStatement.registerOutParameter(7, Types.NUMERIC);
+            callableStatement.registerOutParameter(8, Types.NUMERIC);
+            callableStatement.registerOutParameter(9, Types.NUMERIC);
+            callableStatement.registerOutParameter(10, Types.NUMERIC);
+            callableStatement.registerOutParameter(11, Types.VARCHAR);
+
+
+            // 프로시저 실행
+            callableStatement.execute();
+
+            // 출력 파라미터에서 결과 값 읽기
+            admiNum = callableStatement.getLong(5);
+            tpbuzNum = callableStatement.getString(6);
+            cnt = callableStatement.getDouble(7);
+            totalPop = callableStatement.getDouble(8);
+            operPer = callableStatement.getDouble(9);
+            closPer = callableStatement.getDouble(10);
+            indc = callableStatement.getString(11);
+
+            // 디버그 또는 로깅
+            System.out.println("행정동 코드 : " + admiNum + ", 업종 코드 : " + tpbuzNum);
+            System.out.println("총 인구수 합계 : " + totalPop + ", 매출건수 합계 : " + cnt);
+            System.out.println("운영점포 평균 영업일:  " + operPer + ", 폐업점포 평균 영업일 :" + closPer + ", 상권지표 : " + indc);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // 결과를 맵에 넣어서 반환
+        List<Map<String, Object>> res = new ArrayList<>();
+        Map<String, Object> resData = new HashMap<>();
+        resData.put("admiNum", admiNum);
+        resData.put("tpbuzNum", tpbuzNum);
+        resData.put("amt", 1);
+        resData.put("cnt", cnt);
+        resData.put("totalPop", totalPop);
+        resData.put("operPer", operPer);
+        resData.put("closPer", closPer);
+        resData.put("indc", indc);
+
+        res.add(resData);
+
+        return CompletableFuture.completedFuture(res);
+    }
+
+
+
 
 }

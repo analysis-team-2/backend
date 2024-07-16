@@ -43,9 +43,11 @@ public class MainController {
         CompletableFuture<List<Map<String, Object>>> averageFlowpopFuture = analysisService.getAverageFlowpopAsync(city, dong);
         CompletableFuture<List<Map<String, Object>>> customerPercentageChangeFuture = analysisService.getCustomerPercentageChangeAsync(city, dong, category1, category2);
         CompletableFuture<Map<String, Object>> fullBusinessAnalysisFuture = analysisService.getFullBusinessAnalysisAsync(city, dong, category1, category2);
+        CompletableFuture<List<Map<String, Object>>> estimatedAmtFuture = analysisService.getEstimatedAmt(city, dong, category1, category2);
+
 
         // 모든 비동기 작업이 완료될 때까지 기다림
-        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture, recentMonthlySalesFuture, averageFlowpopFuture, customerPercentageChangeFuture, fullBusinessAnalysisFuture)
+        return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture, recentMonthlySalesFuture, averageFlowpopFuture, customerPercentageChangeFuture, fullBusinessAnalysisFuture, estimatedAmtFuture)
                 .thenCompose(v -> {
                     List<Map<String, Object>> genderAgeData = genderAgeDataFuture.join();
                     String gptInputContent = generateGPTInputContent(genderAgeData, customerAge);
@@ -63,6 +65,7 @@ public class MainController {
                         List<Map<String, Object>> averageFlowpopData = averageFlowpopFuture.join();
                         List<Map<String, Object>> customerPercentageChangeData = customerPercentageChangeFuture.join();
                         Map<String, Object> fullBusinessAnalysisData = fullBusinessAnalysisFuture.join();
+                        List<Map<String, Object>> estimatedAmt = estimatedAmtFuture.join();
 
                         JSONArray daySalesArray = new JSONArray();
                         for (Map<String, Object> daySale : daySalesData) {
@@ -137,11 +140,24 @@ public class MainController {
                             JSONObject customerChangeJSON = new JSONObject();
                             customerChangeJSON.put("sex", customerChange.get("sex"));
                             customerChangeJSON.put("age", customerChange.get("age"));
-                            customerChangeJSON.put("totalCntPrevious", customerChange.get("totalCntPrevious"));
-                            customerChangeJSON.put("totalCntCurrent", customerChange.get("totalCntCurrent"));
                             customerChangeJSON.put("percentageChange", customerChange.get("percentageChange"));
                             customerPercentageChangeArray.put(customerChangeJSON);
                         }
+
+                        JSONArray estimatedAmtArray = new JSONArray();
+                        for (Map<String, Object> amt : estimatedAmt) {
+                            JSONObject amtJSON = new JSONObject();
+                            amtJSON.put("admi_cty_no", amt.get("admiNum"));
+                            amtJSON.put("card_tpbuz_cd", amt.get("tpbuzNum"));
+                            amtJSON.put("amt", amt.get("amt"));
+                            amtJSON.put("cnt", amt.get("cnt"));
+                            amtJSON.put("TOTAL_POPULATION", amt.get("totalPop"));
+                            amtJSON.put("운영점포평균영업기간", amt.get("operPer"));
+                            amtJSON.put("폐업점포평균영업기간", amt.get("closPer"));
+                            amtJSON.put("상권변동지표구분", amt.get("indc"));
+                            estimatedAmtArray.put(amtJSON);
+                        }
+
 
                         JSONObject responseJSON = new JSONObject();
                         if (!genderAgeArray.isEmpty()) {
@@ -161,6 +177,7 @@ public class MainController {
                             JSONObject gptResponseJson = new JSONObject(gptResponse);
                             String gptContent = gptResponseJson.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
                             responseJSON.put("gptResponse", gptContent);
+                            responseJSON.put("estimatedAmt", estimatedAmtArray);
                             responseJSON.put("status", "success");
                             responseJSON.put("message", "데이터 전달 성공");
                             return ResponseEntity.ok(responseJSON.toString());
