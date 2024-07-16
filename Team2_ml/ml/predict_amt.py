@@ -22,7 +22,7 @@ def main():
         df_predict.rename(columns={
             'store_avg_period': '운영점포평균영업기간',
             'shutdown_avg_period': '폐업점포평균영업기간',
-            'chaning_tag': '상권변동지표구분'
+            'changing_tag': '상권변동지표구분'
         }, inplace=True)
         df_predict = TabularDataset(df_predict)
         # 운영점포평균영업기간의 값만 조회
