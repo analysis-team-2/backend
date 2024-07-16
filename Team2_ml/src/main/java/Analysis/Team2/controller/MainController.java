@@ -74,6 +74,8 @@ public class MainController {
                         predictionInput.put("store_avg_period", new Double[]{((Number) data.get("operPer")).doubleValue()});
                         predictionInput.put("shutdown_avg_period", new Double[]{((Number) data.get("closPer")).doubleValue()});
                         predictionInput.put("changing_tag", new String[]{(String) data.get("indc")});
+                        System.out.println("asdfasdf");
+                        System.out.println(data);
                     }
 
                     CompletableFuture<Map<String, Object>> predictionFuture = analysisService.getPredictionAsync(predictionInput);

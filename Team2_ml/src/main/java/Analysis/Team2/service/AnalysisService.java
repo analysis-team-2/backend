@@ -565,6 +565,7 @@ public class AnalysisService {
                 } else {
                     result.put("status", "error");
                     result.put("message", "Python script execution failed with exit code " + exitCode);
+                    result.put("details", output.toString()); // Add detailed error message
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -575,5 +576,6 @@ public class AnalysisService {
             return result;
         });
     }
+
 }
 
