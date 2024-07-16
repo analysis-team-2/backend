@@ -19,7 +19,7 @@ def main():
 
         # JSON 데이터를 DataFrame으로 변환
         df_predict = pd.DataFrame(data)
-        df.rename(columns={
+        df_predict.rename(columns={
             'store_avg_period': '운영점포평균영업기간',
             'shutdown_avg_period': '폐업점포평균영업기간',
             'chaning_tag': '상권변동지표구분'
