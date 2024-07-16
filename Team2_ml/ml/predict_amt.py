@@ -20,8 +20,8 @@ def main():
     input_data = sys.argv[1]
 
     try:
-        # 따옴표로 감싸진 JSON 데이터를 디코딩
-        data = json.loads(input_data[1:-1].replace('\\"', '"'))
+        # JSON 데이터를 직접 디코딩
+        data = json.loads(input_data)
 
         print(data)  # 디버깅 메시지
 
