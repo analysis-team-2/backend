@@ -542,21 +542,28 @@ public class AnalysisService {
             Map<String, Object> result = new HashMap<>();
 
             try {
+                // JSON 데이터 생성
                 String jsonData = objectMapper.writeValueAsString(input);
 
                 // 파이썬 스크립트 실행 명령어
                 String[] command = new String[]{"python", pythonScriptPath, jsonData};
-                System.out.println("jsondata check asdfadfsa");
-                System.out.println(jsonData);
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
 
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                // 표준 출력 읽기
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
                 StringBuilder output = new StringBuilder();
                 String line;
-                while ((line = reader.readLine()) != null) {
+                while ((line = stdInput.readLine()) != null) {
                     output.append(line);
+                }
+
+                // 에러 출력 읽기
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+                StringBuilder errorOutput = new StringBuilder();
+                while ((line = stdError.readLine()) != null) {
+                    errorOutput.append(line);
                 }
 
                 int exitCode = process.waitFor();
@@ -567,7 +574,7 @@ public class AnalysisService {
                 } else {
                     result.put("status", "error");
                     result.put("message", "Python script execution failed with exit code " + exitCode);
-                    result.put("details", output.toString()); // Add detailed error message
+                    result.put("details", errorOutput.toString()); // Add detailed error message
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -578,6 +585,7 @@ public class AnalysisService {
             return result;
         });
     }
+
 
 }
 
