@@ -15,11 +15,11 @@ def main():
         data = json.loads(input_data)
 
         # JSON 데이터를 DataFrame으로 변환
-        df_predict = pd.DataFrame(data)
+        df_predict = pd.DataFrame([data])  # 단일 딕셔너리를 데이터프레임으로 변환
         df_predict = df_predict.rename(columns={
             'store_avg_period': '운영점포평균영업기간',
-            'closure_avg_period': '폐업점포평균영업기간',
-            'business_change_indicator': '상권변동지표구분'
+            'shutdown_avg_period': '폐업점포평균영업기간',
+            'changing_tag': '상권변동지표구분'
         })
         df_predict = TabularDataset(df_predict)
 
