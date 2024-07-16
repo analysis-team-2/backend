@@ -406,7 +406,7 @@ public class AnalysisService {
                         Map<String, Object> row = new HashMap<>();
                         row.put("sex", rs.getString("sex").trim()); // 공백 제거
                         row.put("age", rs.getString("age").trim()); // 공백 제거
-                        row.put("percentageChange", rs.getDouble("percentage_change"));
+                        row.put("percentageChange", rs.getDouble("change_in_percentage"));
                         result.add(row);
                     }
                 }
