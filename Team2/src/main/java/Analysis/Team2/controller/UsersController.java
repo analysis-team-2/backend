@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = "http://http://changdoc.s3-website-ap-southeast-1.amazonaws.com/:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://http://changdoc.s3-website-ap-southeast-1.amazonaws.com:3000", "http://localhost:3000"}, allowCredentials = "true")
 @RequestMapping("/analysis")
 public class UsersController {
     @Autowired
