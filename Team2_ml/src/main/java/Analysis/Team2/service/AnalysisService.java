@@ -545,10 +545,11 @@ public class AnalysisService {
                 // JSON 데이터 생성
                 String jsonData = objectMapper.writeValueAsString(input);
                 System.out.println(jsonData);
+
                 // 파이썬 스크립트 실행 명령어
                 String[] command = new String[]{"python", pythonScriptPath, jsonData};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
-                processBuilder.redirectErrorStream(true);
+                processBuilder.redirectErrorStream(true);  // 표준 출력과 오류 출력을 합침
                 Process process = processBuilder.start();
 
                 // 표준 출력 읽기
@@ -559,13 +560,6 @@ public class AnalysisService {
                     output.append(line);
                 }
 
-                // 에러 출력 읽기
-                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
-                StringBuilder errorOutput = new StringBuilder();
-                while ((line = stdError.readLine()) != null) {
-                    errorOutput.append(line);
-                }
-
                 int exitCode = process.waitFor();
                 System.out.println("Exited with code: " + exitCode);
 
@@ -574,7 +568,7 @@ public class AnalysisService {
                 } else {
                     result.put("status", "error");
                     result.put("message", "Python script execution failed with exit code " + exitCode);
-                    result.put("details", errorOutput.toString()); // Add detailed error message
+                    result.put("details", output.toString());  // 합쳐진 오류 메시지를 여기에 추가
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -585,6 +579,7 @@ public class AnalysisService {
             return result;
         });
     }
+
 
 
 }
