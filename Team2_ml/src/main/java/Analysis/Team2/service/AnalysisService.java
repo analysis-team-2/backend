@@ -550,6 +550,7 @@ public class AnalysisService {
 
                 // 파이썬 스크립트 실행 명령어
                 String[] command = new String[]{"python", pythonScriptPath, escapedJsonData};
+                System.out.println(command);
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
