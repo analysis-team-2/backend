@@ -23,7 +23,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
-    private static final String API_KEY = System.getenv("API_KEY");
+
+        private static final String API_KEY = System.getenv("API_KEY");
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -562,7 +563,7 @@ public class AnalysisService {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
+            System.out.println(result);
             return result;
         });
     }
