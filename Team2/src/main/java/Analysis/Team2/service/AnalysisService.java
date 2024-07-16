@@ -466,7 +466,7 @@ public class AnalysisService {
                     .readTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
                     .build();
-            System.out.println("APIKEY : " + API_KEY);
+            System.out.println("API_KEY : " + API_KEY);
             String json = "{ \"model\": \"gpt-4\", \"messages\": [{\"role\": \"user\", \"content\": \"" + inputContent.replace("\"", "\\\"") + "\"}]}";
             RequestBody body = RequestBody.create(json, MediaType.parse("application/json; charset=utf-8"));
             Request request = new Request.Builder()
