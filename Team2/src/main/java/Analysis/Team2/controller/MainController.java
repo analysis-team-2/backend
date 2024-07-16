@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @RestController
 @CrossOrigin(origins = {"http://changdoc.s3-website-ap-southeast-1.amazonaws.com", "http://localhost:3000"}, allowCredentials = "true")
@@ -20,6 +19,7 @@ public class MainController {
 
     @Autowired
     AnalysisService analysisService;
+
     @PostMapping("/main")
     public CompletableFuture<ResponseEntity<String>> mainRequest(@RequestBody String requestBody) {
         JSONObject jsonRequest = new JSONObject(requestBody);
@@ -27,6 +27,7 @@ public class MainController {
         String dong = jsonRequest.getString("region_dong");
         String category1 = jsonRequest.getString("category1");
         String category2 = jsonRequest.getString("category2");
+        List<String> customerAge = jsonRequest.getJSONArray("customerAge").toList().stream().map(Object::toString).toList();
 
         // 비동기 작업 시작
         CompletableFuture<List<Map<String, Object>>> daySalesFuture = analysisService.getDaySalesAsync(city, dong, category1, category2);
@@ -45,126 +46,154 @@ public class MainController {
 
         // 모든 비동기 작업이 완료될 때까지 기다림
         return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture, recentMonthlySalesFuture, averageFlowpopFuture, customerPercentageChangeFuture, fullBusinessAnalysisFuture)
-                .thenApply(v -> {
-                    // 데이터 처리
-                    List<Map<String, Object>> daySalesData = daySalesFuture.join();
+                .thenCompose(v -> {
                     List<Map<String, Object>> genderAgeData = genderAgeDataFuture.join();
-                    List<Map<String, Object>> hourlySalesData = hourlySalesFuture.join();
-                    String maxLiftConsequent = maxLiftConsequentFuture.join();
-                    Map<String, String> indicator = indicatorFuture.join();
-                    Map<String, Integer> merchantData = merchantFuture.join();
-                    List<Map<String, Object>> merchantCntData = merchantCntFuture.join();
-                    List<Map<String, Object>> yearAmtData = yearAmtFuture.join();
-                    List<Map<String, Object>> unitPriceCntData = unitPriceCntFuture.join();
-                    List<Map<String, Object>> recentMonthlySalesData = recentMonthlySalesFuture.join();
-                    List<Map<String, Object>> averageFlowpopData = averageFlowpopFuture.join();
-                    List<Map<String, Object>> customerPercentageChangeData = customerPercentageChangeFuture.join();
-                    Map<String, Object> fullBusinessAnalysisData = fullBusinessAnalysisFuture.join();
+                    String gptInputContent = generateGPTInputContent(genderAgeData, customerAge);
+                    return analysisService.getGPTResponseAsync(gptInputContent).thenApply(gptResponse -> {
+                        // 데이터 처리
+                        List<Map<String, Object>> daySalesData = daySalesFuture.join();
+                        List<Map<String, Object>> hourlySalesData = hourlySalesFuture.join();
+                        String maxLiftConsequent = maxLiftConsequentFuture.join();
+                        Map<String, String> indicator = indicatorFuture.join();
+                        Map<String, Integer> merchantData = merchantFuture.join();
+                        List<Map<String, Object>> merchantCntData = merchantCntFuture.join();
+                        List<Map<String, Object>> yearAmtData = yearAmtFuture.join();
+                        List<Map<String, Object>> unitPriceCntData = unitPriceCntFuture.join();
+                        List<Map<String, Object>> recentMonthlySalesData = recentMonthlySalesFuture.join();
+                        List<Map<String, Object>> averageFlowpopData = averageFlowpopFuture.join();
+                        List<Map<String, Object>> customerPercentageChangeData = customerPercentageChangeFuture.join();
+                        Map<String, Object> fullBusinessAnalysisData = fullBusinessAnalysisFuture.join();
 
+                        JSONArray daySalesArray = new JSONArray();
+                        for (Map<String, Object> daySale : daySalesData) {
+                            JSONObject daySaleJSON = new JSONObject();
+                            daySaleJSON.put("day", daySale.get("day"));
+                            daySaleJSON.put("totalAmt", daySale.get("totalAmt"));
+                            daySalesArray.put(daySaleJSON);
+                        }
 
-                    JSONArray daySalesArray = new JSONArray();
-                    for (Map<String, Object> daySale : daySalesData) {
-                        JSONObject daySaleJSON = new JSONObject();
-                        daySaleJSON.put("day", daySale.get("day"));
-                        daySaleJSON.put("totalAmt", daySale.get("totalAmt"));
-                        daySalesArray.put(daySaleJSON);
-                    }
+                        JSONArray genderAgeArray = new JSONArray();
+                        for (Map<String, Object> data : genderAgeData) {
+                            JSONObject dataJSON = new JSONObject();
+                            dataJSON.put("sex", data.get("sex"));
+                            dataJSON.put("ageLabel", data.get("ageLabel"));
+                            dataJSON.put("percentage", data.get("percentage"));
+                            genderAgeArray.put(dataJSON);
+                        }
 
-                    JSONArray genderAgeArray = new JSONArray();
-                    for (Map<String, Object> data : genderAgeData) {
-                        JSONObject dataJSON = new JSONObject();
-                        dataJSON.put("sex", data.get("sex"));
-                        dataJSON.put("ageLabel", data.get("ageLabel"));
-                        dataJSON.put("percentage", data.get("percentage"));
-                        genderAgeArray.put(dataJSON);
-                    }
+                        JSONArray hourlySalesArray = new JSONArray();
+                        for (Map<String, Object> hourSale : hourlySalesData) {
+                            JSONObject hourSaleJSON = new JSONObject();
+                            hourSaleJSON.put("hourLabel", hourSale.get("hourLabel"));
+                            hourSaleJSON.put("amtPercentage", hourSale.get("amtPercentage"));
+                            hourSaleJSON.put("cntPercentage", hourSale.get("cntPercentage"));
+                            hourlySalesArray.put(hourSaleJSON);
+                        }
 
-                    JSONArray hourlySalesArray = new JSONArray();
-                    for (Map<String, Object> hourSale : hourlySalesData) {
-                        JSONObject hourSaleJSON = new JSONObject();
-                        hourSaleJSON.put("hourLabel", hourSale.get("hourLabel"));
-                        hourSaleJSON.put("amtPercentage", hourSale.get("amtPercentage"));
-                        hourSaleJSON.put("cntPercentage", hourSale.get("cntPercentage"));
-                        hourlySalesArray.put(hourSaleJSON);
-                    }
-                    JSONArray merchantCntArray = new JSONArray();
-                    for (Map<String, Object> merchantCnt : merchantCntData) {
-                        JSONObject merchantCntJSON = new JSONObject();
-                        merchantCntJSON.put("년월", merchantCnt.get("v_ta_ym"));
-                        merchantCntJSON.put("상가수", merchantCnt.get("v_mer_cnt"));
-                        merchantCntArray.put(merchantCntJSON);
-                    }
-                    JSONArray yearAmtArray = new JSONArray();
-                    for (Map<String, Object> yearAmt : yearAmtData) {
-                        JSONObject yearAmtJSON = new JSONObject();
-                        yearAmtJSON.put("년월", yearAmt.get("v_ta_ymd"));
-                        yearAmtJSON.put("월매출액합계", yearAmt.get("v_amt"));
-                        yearAmtArray.put(yearAmtJSON);
-                    }
+                        JSONArray merchantCntArray = new JSONArray();
+                        for (Map<String, Object> merchantCnt : merchantCntData) {
+                            JSONObject merchantCntJSON = new JSONObject();
+                            merchantCntJSON.put("년월", merchantCnt.get("v_ta_ym"));
+                            merchantCntJSON.put("상가수", merchantCnt.get("v_mer_cnt"));
+                            merchantCntArray.put(merchantCntJSON);
+                        }
 
-                    JSONArray unitPriceCntArray = new JSONArray();
-                    for (Map<String, Object> unitPriceCnt : unitPriceCntData) {
-                        JSONObject unitPriceCntJSON = new JSONObject();
-                        unitPriceCntJSON.put("년월", unitPriceCnt.get("v_ta_ymd"));
-                        unitPriceCntJSON.put("매출건수", unitPriceCnt.get("v_cnt"));
-                        unitPriceCntJSON.put("상가당매출액(평균)", unitPriceCnt.get("v_unit_price"));
-                        unitPriceCntArray.put(unitPriceCntJSON);
-                    }
+                        JSONArray yearAmtArray = new JSONArray();
+                        for (Map<String, Object> yearAmt : yearAmtData) {
+                            JSONObject yearAmtJSON = new JSONObject();
+                            yearAmtJSON.put("년월", yearAmt.get("v_ta_ymd"));
+                            yearAmtJSON.put("월매출액합계", yearAmt.get("v_amt"));
+                            yearAmtArray.put(yearAmtJSON);
+                        }
 
-                    JSONArray recentMonthlySalesArray = new JSONArray();
-                    for (Map<String, Object> monthlySale : recentMonthlySalesData) {
-                        JSONObject monthlySaleJSON = new JSONObject();
-                        monthlySaleJSON.put("salesMonth", monthlySale.get("salesMonth"));
-                        monthlySaleJSON.put("totalSales", monthlySale.get("totalSales"));
-                        recentMonthlySalesArray.put(monthlySaleJSON);
-                    }
+                        JSONArray unitPriceCntArray = new JSONArray();
+                        for (Map<String, Object> unitPriceCnt : unitPriceCntData) {
+                            JSONObject unitPriceCntJSON = new JSONObject();
+                            unitPriceCntJSON.put("년월", unitPriceCnt.get("v_ta_ymd"));
+                            unitPriceCntJSON.put("매출건수", unitPriceCnt.get("v_cnt"));
+                            unitPriceCntJSON.put("상가당매출액(평균)", unitPriceCnt.get("v_unit_price"));
+                            unitPriceCntArray.put(unitPriceCntJSON);
+                        }
 
-                    JSONArray averageFlowpopArray = new JSONArray();
-                    for (Map<String, Object> flowpop : averageFlowpopData) {
-                        JSONObject flowpopJSON = new JSONObject();
-                        flowpopJSON.put("ageGroup", flowpop.get("ageGroup"));
-                        flowpopJSON.put("mCntAvg", flowpop.get("mCntAvg"));
-                        flowpopJSON.put("fCntAvg", flowpop.get("fCntAvg"));
-                        averageFlowpopArray.put(flowpopJSON);
-                    }
+                        JSONArray recentMonthlySalesArray = new JSONArray();
+                        for (Map<String, Object> monthlySale : recentMonthlySalesData) {
+                            JSONObject monthlySaleJSON = new JSONObject();
+                            monthlySaleJSON.put("salesMonth", monthlySale.get("salesMonth"));
+                            monthlySaleJSON.put("totalSales", monthlySale.get("totalSales"));
+                            recentMonthlySalesArray.put(monthlySaleJSON);
+                        }
 
-                    JSONArray customerPercentageChangeArray = new JSONArray();
-                    for (Map<String, Object> customerChange : customerPercentageChangeData) {
-                        JSONObject customerChangeJSON = new JSONObject();
-                        customerChangeJSON.put("sex", customerChange.get("sex"));
-                        customerChangeJSON.put("age", customerChange.get("age"));
-                        customerChangeJSON.put("totalCntPrevious", customerChange.get("totalCntPrevious"));
-                        customerChangeJSON.put("totalCntCurrent", customerChange.get("totalCntCurrent"));
-                        customerChangeJSON.put("percentageChange", customerChange.get("percentageChange"));
-                        customerPercentageChangeArray.put(customerChangeJSON);
-                    }
+                        JSONArray averageFlowpopArray = new JSONArray();
+                        for (Map<String, Object> flowpop : averageFlowpopData) {
+                            JSONObject flowpopJSON = new JSONObject();
+                            flowpopJSON.put("ageGroup", flowpop.get("ageGroup"));
+                            flowpopJSON.put("mCntAvg", flowpop.get("mCntAvg"));
+                            flowpopJSON.put("fCntAvg", flowpop.get("fCntAvg"));
+                            averageFlowpopArray.put(flowpopJSON);
+                        }
 
+                        JSONArray customerPercentageChangeArray = new JSONArray();
+                        for (Map<String, Object> customerChange : customerPercentageChangeData) {
+                            JSONObject customerChangeJSON = new JSONObject();
+                            customerChangeJSON.put("sex", customerChange.get("sex"));
+                            customerChangeJSON.put("age", customerChange.get("age"));
+                            customerChangeJSON.put("totalCntPrevious", customerChange.get("totalCntPrevious"));
+                            customerChangeJSON.put("totalCntCurrent", customerChange.get("totalCntCurrent"));
+                            customerChangeJSON.put("percentageChange", customerChange.get("percentageChange"));
+                            customerPercentageChangeArray.put(customerChangeJSON);
+                        }
 
-
-                    JSONObject responseJSON = new JSONObject();
-                    if (!genderAgeArray.isEmpty()) {
-                        responseJSON.put("genderAgeDistribution", genderAgeArray);
-                        responseJSON.put("daySales", daySalesArray);
-                        responseJSON.put("hourlySales", hourlySalesArray);
-//                        responseJSON.put("associationCategory", maxLiftConsequent);
-                        responseJSON.put("indicator", new JSONObject(indicator)); // indicator 정보 추가
-                        responseJSON.put("merchantData", new JSONObject(merchantData));
-                        responseJSON.put("merchantCntData", merchantCntArray);
-                        responseJSON.put("yearAmtData", yearAmtArray);
-                        responseJSON.put("unitPriceCntData", unitPriceCntArray);
-                        responseJSON.put("recentMonthlySales", recentMonthlySalesArray);
-                        responseJSON.put("averageFlowpop", averageFlowpopArray);
-                        responseJSON.put("customerPercentageChange", customerPercentageChangeArray);
-                        responseJSON.put("fullBusinessAnalysis", new JSONObject(fullBusinessAnalysisData));
-                        responseJSON.put("status", "success");
-                        responseJSON.put("message", "데이터 전달 성공");
-                        return ResponseEntity.ok(responseJSON.toString());
-                    } else {
-                        responseJSON.put("error", "No data found for the given parameters.");
-                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseJSON.toString());
-                    }
+                        JSONObject responseJSON = new JSONObject();
+                        if (!genderAgeArray.isEmpty()) {
+                            responseJSON.put("genderAgeDistribution", genderAgeArray);
+                            responseJSON.put("daySales", daySalesArray);
+                            responseJSON.put("hourlySales", hourlySalesArray);
+                            responseJSON.put("associationCategory", maxLiftConsequent);
+                            responseJSON.put("indicator", new JSONObject(indicator)); // indicator 정보 추가
+                            responseJSON.put("merchantData", new JSONObject(merchantData));
+                            responseJSON.put("merchantCntData", merchantCntArray);
+                            responseJSON.put("yearAmtData", yearAmtArray);
+                            responseJSON.put("unitPriceCntData", unitPriceCntArray);
+                            responseJSON.put("recentMonthlySales", recentMonthlySalesArray);
+                            responseJSON.put("averageFlowpop", averageFlowpopArray);
+                            responseJSON.put("customerPercentageChange", customerPercentageChangeArray);
+                            responseJSON.put("fullBusinessAnalysis", new JSONObject(fullBusinessAnalysisData));
+                            JSONObject gptResponseJson = new JSONObject(gptResponse);
+                            String gptContent = gptResponseJson.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+                            responseJSON.put("gptResponse", gptContent);
+                            responseJSON.put("status", "success");
+                            responseJSON.put("message", "데이터 전달 성공");
+                            return ResponseEntity.ok(responseJSON.toString());
+                        } else {
+                            responseJSON.put("error", "No data found for the given parameters.");
+                            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseJSON.toString());
+                        }
+                    });
                 });
     }
 
+    private String generateGPTInputContent(List<Map<String, Object>> genderAgeData, List<String> customerAge) {
+        StringBuilder inputContent = new StringBuilder();
 
+        // customerAge 리스트에 있는 값들을 포함
+        inputContent.append("나는 ");
+        for (int i = 0; i < customerAge.size(); i++) {
+            inputContent.append(customerAge.get(i)).append("를");
+            if (i < customerAge.size() - 1) {
+                inputContent.append(", ");
+            } else {
+                inputContent.append(" 타겟으로 창업 하려고해. ");
+            }
+        }
+
+        inputContent.append("다음은 내가 창업하고자 하는 업종의 소비자의 성별/연령대별 고객 비중이야. ");
+        inputContent.append("다음 데이터를 기반으로 나의 창업 계획에 대한 너의 의견은 어떠한지 듣고싶어. ");
+        inputContent.append("대답은 미사여구를 붙이지말고 부정적인지, 보통인지, 긍정적인지를 신호등색깔(적색,황색,녹색)로만 대답해. ");
+        System.out.println(inputContent);
+        for (Map<String, Object> data : genderAgeData) {
+            inputContent.append(data.get("sex")).append(" | ").append(data.get("ageLabel")).append(" | ").append(data.get("percentage")).append("% ");
+        }
+
+        return inputContent.toString();
+    }
 }

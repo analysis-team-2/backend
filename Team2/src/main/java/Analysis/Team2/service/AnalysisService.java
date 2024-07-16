@@ -1,5 +1,6 @@
 package Analysis.Team2.service;
 
+import okhttp3.*;
 import org.hibernate.dialect.OracleTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -7,15 +8,22 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.sql.*;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class AnalysisService {
+    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String API_KEY = System.getenv("API_KEY");
+
+
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -450,4 +458,32 @@ public class AnalysisService {
             return result;
         });
     }
+
+    @Async
+    public CompletableFuture<String> getGPTResponseAsync(String inputContent) {
+        return CompletableFuture.supplyAsync(() -> {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build();
+
+            String json = "{ \"model\": \"gpt-4\", \"messages\": [{\"role\": \"user\", \"content\": \"" + inputContent.replace("\"", "\\\"") + "\"}]}";
+            RequestBody body = RequestBody.create(json, MediaType.parse("application/json; charset=utf-8"));
+            Request request = new Request.Builder()
+                    .url(API_URL)
+                    .header("Authorization", "Bearer " + API_KEY)
+                    .post(body)
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+                return response.body().string();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
+    }
+
 }
