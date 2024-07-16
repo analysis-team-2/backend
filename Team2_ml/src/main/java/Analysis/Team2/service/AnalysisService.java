@@ -544,7 +544,7 @@ public class AnalysisService {
             try {
                 // JSON 데이터를 생성하고 이스케이프 처리
                 String jsonData = objectMapper.writeValueAsString(input);
-                String escapedJsonData = jsonData.replace("\"", "\\\"");
+                String escapedJsonData = "'" + jsonData.replace("\"", "\\\"") + "'";
 
                 System.out.println(escapedJsonData);
 
@@ -588,6 +588,7 @@ public class AnalysisService {
             return result;
         });
     }
+
 
 
 
