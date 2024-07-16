@@ -543,15 +543,10 @@ public class AnalysisService {
             try {
                 String jsonData = objectMapper.writeValueAsString(input);
 
-                String[] command = new String[]{"python", pythonScriptPath};
+                String[] command = new String[]{"python", pythonScriptPath, jsonData};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
-
-                try (OutputStream os = process.getOutputStream()) {
-                    os.write(jsonData.getBytes(StandardCharsets.UTF_8));
-                    os.flush();
-                }
 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
                 StringBuilder output = new StringBuilder();
