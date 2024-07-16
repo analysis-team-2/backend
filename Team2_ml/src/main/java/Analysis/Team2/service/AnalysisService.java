@@ -544,6 +544,7 @@ public class AnalysisService {
             try {
                 String jsonData = objectMapper.writeValueAsString(input);
 
+                // 파이썬 스크립트 실행 명령어
                 String[] command = new String[]{"python", pythonScriptPath, jsonData};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
@@ -553,17 +554,22 @@ public class AnalysisService {
                 StringBuilder output = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.trim().startsWith("{") && line.trim().endsWith("}")) {
-                        output.append(line);
-                    }
+                    output.append(line);
                 }
 
                 int exitCode = process.waitFor();
                 System.out.println("Exited with code: " + exitCode);
 
-                result = objectMapper.readValue(output.toString(), Map.class);
+                if (exitCode == 0) {
+                    result = objectMapper.readValue(output.toString(), Map.class);
+                } else {
+                    result.put("status", "error");
+                    result.put("message", "Python script execution failed with exit code " + exitCode);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
+                result.put("status", "error");
+                result.put("message", e.getMessage());
             }
 
             return result;
