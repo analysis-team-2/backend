@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private static final String API_KEY = System.getenv("API_KEY");
-    private static final String LOG_DIR = "log/GPT_Zlog";
+    private static final String LOG_DIR = "log";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
