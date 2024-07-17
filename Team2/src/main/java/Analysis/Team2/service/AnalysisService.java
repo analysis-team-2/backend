@@ -597,7 +597,8 @@ public class AnalysisService {
             try {
                 // 명령어 출력
                 System.out.println("Executing command: " + String.join(" ", command));
-
+                String currentDir = System.getProperty("user.dir");
+                System.out.println("Current directory: " + currentDir);
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
