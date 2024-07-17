@@ -595,26 +595,30 @@ public class AnalysisService {
             String[] command = new String[]{"python", pythonScriptPath, city, code};
 
             try {
+                // 명령어 출력
+                System.out.println("Executing command: " + String.join(" ", command));
+
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
 
-                // 표준 출력 읽기
+                // 표준 출력 및 오류 출력 읽기
                 BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
                 StringBuilder output = new StringBuilder();
+                StringBuilder errorOutput = new StringBuilder();
                 String line;
+
                 while ((line = stdInput.readLine()) != null) {
                     output.append(line);
                 }
-
-                // 에러 출력 읽기
-                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
-                StringBuilder errorOutput = new StringBuilder();
                 while ((line = stdError.readLine()) != null) {
                     errorOutput.append(line);
                 }
 
                 int exitCode = process.waitFor();
+                System.out.println("Python script output: " + output.toString());
+                System.out.println("Python script error output: " + errorOutput.toString());
                 System.out.println("Exited with code: " + exitCode);
 
                 if (exitCode == 0) {
@@ -630,6 +634,7 @@ public class AnalysisService {
             return result;
         });
     }
+
 
     @Async
     public CompletableFuture<String> getCodeAsync(String mainNm, String sumNm) {
