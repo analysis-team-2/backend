@@ -2,7 +2,6 @@ package Analysis.Team2.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
-import org.hibernate.dialect.OracleTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -12,7 +11,6 @@ import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.sql.Connection;
@@ -23,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
-
     private static final String API_KEY = System.getenv("API_KEY");
 
     @Autowired
@@ -76,6 +73,7 @@ public class AnalysisService {
         return CompletableFuture.completedFuture(daySales);
     }
 
+    @Async
     public CompletableFuture<List<Map<String, Object>>> getGenderAgeDistributionAsync(String city, String dong, String primaryCategory, String secondaryCategory) {
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> distribution = new ArrayList<>();
@@ -143,6 +141,7 @@ public class AnalysisService {
         });
     }
 
+    @Async
     public CompletableFuture<String> getMaxLiftConsequentAsync(String primaryBusiness, String secondaryBusiness) {
         return CompletableFuture.supplyAsync(() -> {
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -333,7 +332,7 @@ public class AnalysisService {
                 cstmt.setString(2, dong);
                 cstmt.setString(3, primaryBusiness);
                 cstmt.setString(4, secondaryBusiness);
-                cstmt.registerOutParameter(5, OracleTypes.CURSOR);
+                cstmt.registerOutParameter(5, Types.REF_CURSOR);
 
                 cstmt.execute();
 
@@ -365,7 +364,7 @@ public class AnalysisService {
 
                 cstmt.setString(1, city);
                 cstmt.setString(2, dong);
-                cstmt.registerOutParameter(3, OracleTypes.CURSOR);
+                cstmt.registerOutParameter(3, Types.REF_CURSOR);
 
                 cstmt.execute();
 
@@ -587,8 +586,69 @@ public class AnalysisService {
         });
     }
 
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getTimeSeriesPredictionAsync(String city, String code) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            String pythonScriptPath = "ml/models/timeSeries.py";
+            String[] command = new String[]{"python", pythonScriptPath, city, code};
 
+            try {
+                ProcessBuilder processBuilder = new ProcessBuilder(command);
+                processBuilder.redirectErrorStream(true);
+                Process process = processBuilder.start();
 
+                // 표준 출력 읽기
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                String line;
+                while ((line = stdInput.readLine()) != null) {
+                    // 각 줄을 JSON 객체로 변환하여 리스트에 추가
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length == 2) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("timestamp", parts[0]);
+                        row.put("mean", Double.parseDouble(parts[1]));
+                        result.add(row);
+                    }
+                }
 
+                // 에러 출력 읽기
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+                StringBuilder errorOutput = new StringBuilder();
+                while ((line = stdError.readLine()) != null) {
+                    errorOutput.append(line);
+                }
+
+                int exitCode = process.waitFor();
+                System.out.println("Exited with code: " + exitCode);
+
+                if (exitCode != 0) {
+                    throw new RuntimeException("Python script execution failed with exit code " + exitCode + " and error: " + errorOutput.toString());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            return result;
+        });
+    }
+
+    @Async
+    public CompletableFuture<String> getCodeAsync(String mainNm, String sumNm) {
+        return CompletableFuture.supplyAsync(() -> {
+            DataSource dataSource = jdbcTemplate.getDataSource();
+            String code = null;
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement callableStatement = conn.prepareCall("{ call proc_get_code(?, ?, ?) }")) {
+                callableStatement.setString(1, mainNm);
+                callableStatement.setString(2, sumNm);
+                callableStatement.registerOutParameter(3, Types.VARCHAR);
+                callableStatement.execute();
+                code = callableStatement.getString(3);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return code;
+        });
+    }
 }
-
