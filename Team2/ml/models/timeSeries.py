@@ -10,7 +10,7 @@ def load_and_predict(model_name, item_id):
     try:
         # 모델 경로 설정
         model_paths = {
-            '광명시': 'merged_data_gm',
+            '광명시': 'models/merged_data_gm',
             '시흥시': 'merged_data_sh',
             '수원시': 'merged_data_sw',
             '안양시': 'merged_data_yy',
