@@ -1,21 +1,23 @@
 package Analysis.Team2.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
-import org.hibernate.dialect.OracleTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.sql.Connection;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -23,8 +25,9 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String API_KEY = System.getenv("API_KEY");
+    private static final String LOG_DIR = "log";
 
-        private static final String API_KEY = System.getenv("API_KEY");
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -75,6 +78,7 @@ public class AnalysisService {
         return CompletableFuture.completedFuture(daySales);
     }
 
+    @Async
     public CompletableFuture<List<Map<String, Object>>> getGenderAgeDistributionAsync(String city, String dong, String primaryCategory, String secondaryCategory) {
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> distribution = new ArrayList<>();
@@ -142,6 +146,7 @@ public class AnalysisService {
         });
     }
 
+    @Async
     public CompletableFuture<String> getMaxLiftConsequentAsync(String primaryBusiness, String secondaryBusiness) {
         return CompletableFuture.supplyAsync(() -> {
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -332,7 +337,7 @@ public class AnalysisService {
                 cstmt.setString(2, dong);
                 cstmt.setString(3, primaryBusiness);
                 cstmt.setString(4, secondaryBusiness);
-                cstmt.registerOutParameter(5, OracleTypes.CURSOR);
+                cstmt.registerOutParameter(5, Types.REF_CURSOR);
 
                 cstmt.execute();
 
@@ -364,7 +369,7 @@ public class AnalysisService {
 
                 cstmt.setString(1, city);
                 cstmt.setString(2, dong);
-                cstmt.registerOutParameter(3, OracleTypes.CURSOR);
+                cstmt.registerOutParameter(3, Types.REF_CURSOR);
 
                 cstmt.execute();
 
@@ -455,7 +460,6 @@ public class AnalysisService {
             return result;
         });
     }
-
     @Async
     public CompletableFuture<String> getGPTResponseAsync(String inputContent) {
         return CompletableFuture.supplyAsync(() -> {
@@ -464,7 +468,7 @@ public class AnalysisService {
                     .readTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
                     .build();
-            System.out.println("API_KEY : " + API_KEY);
+//            System.out.println("API_KEY : " + API_KEY);
             String json = "{ \"model\": \"gpt-4\", \"messages\": [{\"role\": \"user\", \"content\": \"" + inputContent.replace("\"", "\\\"") + "\"}]}";
             RequestBody body = RequestBody.create(json, MediaType.parse("application/json; charset=utf-8"));
             Request request = new Request.Builder()
@@ -474,13 +478,45 @@ public class AnalysisService {
                     .build();
 
             try (Response response = client.newCall(request).execute()) {
+                String responseBody = response.body().string();
+                logToFile(inputContent, responseBody);
+
                 if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-                return response.body().string();
+                return responseBody;
             } catch (Exception e) {
                 e.printStackTrace();
+                logToFile(inputContent, e.getMessage());
                 return null;
             }
         });
+    }
+
+    private void logToFile(String inputContent, String response) {
+        try {
+            // Create log directory if it does not exist
+            Path logDirPath = Paths.get(LOG_DIR);
+            if (!Files.exists(logDirPath)) {
+                Files.createDirectories(logDirPath);
+            }
+
+            // Create or append to the log file
+            String logFileName = "gpt_response.log";
+            Path logFilePath = logDirPath.resolve(logFileName);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath.toString(), true))) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                String currentTime = LocalDateTime.now().format(formatter);
+                writer.write("Timestamp: " + currentTime);
+                writer.newLine();
+                writer.write("Input Content: " + inputContent);
+                writer.newLine();
+                writer.write("Response: " + response);
+                writer.newLine();
+                writer.write("---------------------------------------------------------");
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Async
@@ -567,7 +603,7 @@ public class AnalysisService {
                 }
 
                 int exitCode = process.waitFor();
-                System.out.println("Exited with code: " + exitCode);
+//                System.out.println("Exited with code: " + exitCode);
 
                 if (exitCode == 0) {
                     result = objectMapper.readValue(output.toString(), Map.class);
@@ -586,8 +622,70 @@ public class AnalysisService {
         });
     }
 
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getTimeSeriesPredictionAsync(String city, String code) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            String pythonScriptPath = "ml/models/timeSeries.py";
+            String[] command = new String[]{"python", pythonScriptPath, city, code};
+            String currentDir = System.getProperty("user.dir");
+            try {
+                // 명령어 출력
+
+                ProcessBuilder processBuilder = new ProcessBuilder(command);
+                processBuilder.redirectErrorStream(true);
+                Process process = processBuilder.start();
+
+                // 표준 출력 및 오류 출력 읽기
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+                StringBuilder output = new StringBuilder();
+                StringBuilder errorOutput = new StringBuilder();
+                String line;
+
+                while ((line = stdInput.readLine()) != null) {
+                    output.append(line);
+                }
+                while ((line = stdError.readLine()) != null) {
+                    errorOutput.append(line);
+                }
+
+                int exitCode = process.waitFor();
+//                System.out.println("Python script output: " + output.toString());
+//                System.out.println("Python script error output: " + errorOutput.toString());
+//                System.out.println("Exited with code: " + exitCode);
+
+                if (exitCode == 0) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    result = mapper.readValue(output.toString(), new TypeReference<List<Map<String, Object>>>(){});
+                } else {
+                    throw new RuntimeException("Python script execution failed with exit code " + exitCode + " and error: " + errorOutput.toString());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            return result;
+        });
+    }
 
 
-
+    @Async
+    public CompletableFuture<String> getCodeAsync(String mainNm, String sumNm) {
+        return CompletableFuture.supplyAsync(() -> {
+            DataSource dataSource = jdbcTemplate.getDataSource();
+            String code = null;
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement callableStatement = conn.prepareCall("{ call proc_get_code(?, ?, ?) }")) {
+                callableStatement.setString(1, mainNm);
+                callableStatement.setString(2, sumNm);
+                callableStatement.registerOutParameter(3, Types.VARCHAR);
+                callableStatement.execute();
+                code = callableStatement.getString(3);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return code;
+        });
+    }
 }
-
