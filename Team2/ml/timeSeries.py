@@ -22,7 +22,7 @@ def load_and_predict(model_name, item_id):
 
     # 모델 로드 (버전 불일치 무시)
     predictor = TimeSeriesPredictor.load(model_path, require_version_match=False)
-    
+
     # 데이터 로드 및 변환
     file_path = "./train_data_time.csv"
     df = pd.read_csv(file_path)

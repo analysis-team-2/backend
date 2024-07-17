@@ -1,5 +1,6 @@
 package Analysis.Team2.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -600,16 +601,10 @@ public class AnalysisService {
 
                 // 표준 출력 읽기
                 BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                StringBuilder output = new StringBuilder();
                 String line;
                 while ((line = stdInput.readLine()) != null) {
-                    // 각 줄을 JSON 객체로 변환하여 리스트에 추가
-                    String[] parts = line.trim().split("\\s+");
-                    if (parts.length == 2) {
-                        Map<String, Object> row = new HashMap<>();
-                        row.put("timestamp", parts[0]);
-                        row.put("mean", Double.parseDouble(parts[1]));
-                        result.add(row);
-                    }
+                    output.append(line);
                 }
 
                 // 에러 출력 읽기
@@ -622,7 +617,10 @@ public class AnalysisService {
                 int exitCode = process.waitFor();
                 System.out.println("Exited with code: " + exitCode);
 
-                if (exitCode != 0) {
+                if (exitCode == 0) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    result = mapper.readValue(output.toString(), new TypeReference<List<Map<String, Object>>>(){});
+                } else {
                     throw new RuntimeException("Python script execution failed with exit code " + exitCode + " and error: " + errorOutput.toString());
                 }
             } catch (Exception e) {
