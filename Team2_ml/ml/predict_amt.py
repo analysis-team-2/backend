@@ -33,7 +33,7 @@ def main():
         })
         df_predict = TabularDataset(df_predict)
 
-        model_path = r"ml/ag-20240715_073451"
+        model_path = r"ag-20240715_073451"
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"모델 경로를 찾을 수 없습니다: {model_path}")
 
