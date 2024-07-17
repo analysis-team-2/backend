@@ -220,12 +220,12 @@ public class MainController {
         inputContent.append("내가 하려는 창업에 대한 분석 데이터를 너에게 공유할테니, 차근차근 분석하되 답변에 포함하지는 말고 이후에 내가 원하는 질문에 대한 답변만 해줬으면 해. ");
 
         inputContent.append("첫번째, 내가 창업하고자 하는 지역에서 해당 업종의 전체 월 매출 합산 예상 데이터야. ");
-        inputContent.append("예상 매출액 : ").append(predictionResult.get("predicted_value")).append("원.");
+        inputContent.append("예상 매출액 : ").append(predictionResult.get("predicted_value")).append("원. ");
 //        inputContent.append("예상 매출액 : 500000000원. ");
 
         inputContent.append("두번째, 내가 창업하고자 하는 지역에서 해당 업종의 일별 예상 매출액 추이 모델을 통해 도출된 데이터야. ");
         for (Map<String, Object> data : timeSeriesPredictionResult) {
-            inputContent.append(data.get("timestamp")).append(" | ")
+            inputContent.append(data.get("timestamp")).append(" : ")
                     .append(data.get("mean")).append(", ");
         }
 
@@ -235,7 +235,7 @@ public class MainController {
         }
 
         inputContent.append("위 데이터들을 기반으로 나의 창업 계획에 대한 너의 의견은 어떠한지 듣고싶어. ");
-        inputContent.append("대답은 미사여구를 붙이지말고, 전체 월 매출 합산 예상 데이터, 예상 매출액 추이 데이터, 주고객 연령 적합도 각각에 대한 분석을 바탕으로 창업에 대해 부정적인지, 보통인지, 긍정적인지를 신호등색깔(적색,황색,녹색)로 각각에 대해 답변해줘. ");
+        inputContent.append("대답은 미사여구를 붙이지말고, 업종의 전체 월 매출 합산 예상 데이터, 업종의 일별 매출액 추이 예상 데이터, 주고객 연령 적합도 각각에 대한 분석을 바탕으로 창업에 대해 부정적인지, 보통인지, 긍정적인지를 신호등색깔(적색,황색,녹색)로 각각에 대해 판단해서 답변해줘. ");
         inputContent.append("예를 들어, 예상 매출 데이터는 '적색', 예상 매출액 추이 데이터는 '황색', 주고객 연령 적합도는 '녹색' 이면, 답변은 설명과 미사여구를 붙이지말고 '적색,황색,녹색' 이라고 답변해줘. ");
         inputContent.append("숨을 깊게 들이마시고, 차근차근 확인해봐. 잘 수행하면 팁으로 50$ 줄게. ");
 
