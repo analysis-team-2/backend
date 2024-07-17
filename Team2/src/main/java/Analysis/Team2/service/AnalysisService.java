@@ -9,12 +9,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.sql.Connection;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private static final String API_KEY = System.getenv("API_KEY");
+    private static final String LOG_DIR = "Analysis.Team2/log";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -456,7 +460,6 @@ public class AnalysisService {
             return result;
         });
     }
-
     @Async
     public CompletableFuture<String> getGPTResponseAsync(String inputContent) {
         return CompletableFuture.supplyAsync(() -> {
@@ -475,13 +478,45 @@ public class AnalysisService {
                     .build();
 
             try (Response response = client.newCall(request).execute()) {
+                String responseBody = response.body().string();
+                logToFile(inputContent, responseBody);
+
                 if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-                return response.body().string();
+                return responseBody;
             } catch (Exception e) {
                 e.printStackTrace();
+                logToFile(inputContent, e.getMessage());
                 return null;
             }
         });
+    }
+
+    private void logToFile(String inputContent, String response) {
+        try {
+            // Create log directory if it does not exist
+            Path logDirPath = Paths.get(LOG_DIR);
+            if (!Files.exists(logDirPath)) {
+                Files.createDirectories(logDirPath);
+            }
+
+            // Create or append to the log file
+            String logFileName = "gpt_response.log";
+            Path logFilePath = logDirPath.resolve(logFileName);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath.toString(), true))) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                String currentTime = LocalDateTime.now().format(formatter);
+                writer.write("Timestamp: " + currentTime);
+                writer.newLine();
+                writer.write("Input Content: " + inputContent);
+                writer.newLine();
+                writer.write("Response: " + response);
+                writer.newLine();
+                writer.write("---------------------------------------------------------");
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Async
