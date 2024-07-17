@@ -43,7 +43,7 @@ def load_and_predict(model_name, item_id):
         # 2024-07-01부터 끝까지의 결과 필터링
         filtered_predictions = predictions.loc[item_id].reset_index()
         filtered_predictions = filtered_predictions[filtered_predictions['timestamp'] >= '2024-07-01']
-        filtered_predictions['timestamp'] = filtered_predictions['timestamp'].apply(lambda x: datetime.utcfromtimestamp(x / 1000).strftime('%Y-%m-%d'))
+        filtered_predictions['timestamp'] = filtered_predictions['timestamp'].apply(lambda x: x.strftime('%Y-%m-%d'))
 
         filtered_predictions = filtered_predictions[['timestamp', 'mean']]
 
