@@ -5,6 +5,8 @@ import warnings
 import logging
 import json
 import sys
+from datetime import datetime
+
 
 def load_and_predict(model_name, item_id):
     try:
