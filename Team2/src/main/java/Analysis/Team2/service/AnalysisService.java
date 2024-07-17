@@ -16,8 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.sql.Connection;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private static final String API_KEY = System.getenv("API_KEY");
-    private static final String LOG_DIR = "Analysis.Team2/log";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -460,6 +457,7 @@ public class AnalysisService {
             return result;
         });
     }
+
     @Async
     public CompletableFuture<String> getGPTResponseAsync(String inputContent) {
         return CompletableFuture.supplyAsync(() -> {
@@ -477,41 +475,39 @@ public class AnalysisService {
                     .post(body)
                     .build();
 
+            String responseString = null;
             try (Response response = client.newCall(request).execute()) {
-                String responseBody = response.body().string();
-                logToFile(inputContent, responseBody);
-
                 if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-                return responseBody;
+                responseString = response.body().string();
             } catch (Exception e) {
                 e.printStackTrace();
-                logToFile(inputContent, e.getMessage());
                 return null;
             }
+
+            // Log inputContent and responseString
+            logToFile(inputContent, responseString);
+
+            return responseString;
         });
     }
 
-    private void logToFile(String inputContent, String response) {
+    private void logToFile(String inputContent, String responseString) {
+        String logDir = "Analysis/Team2/log";
+        Path logPath = Paths.get(logDir);
         try {
-            // Create log directory if it does not exist
-            Path logDirPath = Paths.get(LOG_DIR);
-            if (!Files.exists(logDirPath)) {
-                Files.createDirectories(logDirPath);
+            // Create log directory if it doesn't exist
+            if (!Files.exists(logPath)) {
+                Files.createDirectories(logPath);
             }
 
-            // Create or append to the log file
-            String logFileName = "gpt_response.log";
-            Path logFilePath = logDirPath.resolve(logFileName);
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath.toString(), true))) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                String currentTime = LocalDateTime.now().format(formatter);
-                writer.write("Timestamp: " + currentTime);
-                writer.newLine();
+            // Create log file
+            String logFileName = logDir + "/gpt_response.log";
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFileName, true))) {
                 writer.write("Input Content: " + inputContent);
                 writer.newLine();
-                writer.write("Response: " + response);
+                writer.write("Response: " + responseString);
                 writer.newLine();
-                writer.write("---------------------------------------------------------");
+                writer.write("----------");
                 writer.newLine();
             }
         } catch (IOException e) {
