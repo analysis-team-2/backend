@@ -23,7 +23,7 @@ def main():
         # JSON 데이터를 직접 디코딩
         data = json.loads(input_data)
 
-        print(data)  # 디버깅 메시지
+#         print(data)  # 디버깅 메시지
 
         df_predict = pd.DataFrame(data)
         df_predict = df_predict.rename(columns={
