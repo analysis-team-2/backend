@@ -542,14 +542,11 @@ public class AnalysisService {
             Map<String, Object> result = new HashMap<>();
 
             try {
-                // JSON 데이터를 생성하고 이스케이프 처리
+                // JSON 데이터를 생성
                 String jsonData = objectMapper.writeValueAsString(input);
-                String escapedJsonData = "'" + jsonData.replace("\"", "\\\"") + "'";
 
-                System.out.println(escapedJsonData);
-
-                // 파이썬 스크립트 실행 명령어
-                String[] command = new String[]{"python", pythonScriptPath, escapedJsonData};
+                // JSON 데이터를 적절히 이스케이프하여 파이썬 스크립트에 전달
+                String[] command = new String[]{"python", pythonScriptPath, jsonData};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
