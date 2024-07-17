@@ -220,18 +220,18 @@ public class MainController {
         inputContent.append("내가 하려는 창업에 대한 분석 데이터를 너에게 공유할테니, 차근차근 분석하되 답변에 포함하지는 말고 이후에 내가 원하는 질문에 대한 답변만 해줬으면 해. ");
 
         inputContent.append("첫번째, 내가 창업하고자 하는 지역에서 해당 업종의 전체 월 매출 합산 예상 데이터야. ");
-        inputContent.append("예상 매출액 : ").append(predictionResult.get("predicted_value")).append("원");
+        inputContent.append("예상 매출액 : ").append(predictionResult.get("predicted_value")).append("원.");
 //        inputContent.append("예상 매출액 : 500000000원. ");
 
         inputContent.append("두번째, 내가 창업하고자 하는 지역에서 해당 업종의 일별 예상 매출액 추이 모델을 통해 도출된 데이터야. ");
         for (Map<String, Object> data : timeSeriesPredictionResult) {
             inputContent.append(data.get("timestamp")).append(" | ")
-                    .append(data.get("mean")).append(" ");
+                    .append(data.get("mean")).append(", ");
         }
 
         inputContent.append("세번째, 주고객 연령 적합도를 확인하기 위한, 내가 창업하고자 하는 업종의 소비자의 성별/연령대별 고객 비중 데이터야. ");
         for (Map<String, Object> data : genderAgeData) {
-            inputContent.append(data.get("sex")).append(" | ").append(data.get("ageLabel")).append(" | ").append(data.get("percentage")).append("% ");
+            inputContent.append(data.get("sex")).append(" | ").append(data.get("ageLabel")).append(" | ").append(data.get("percentage")).append("%, ");
         }
 
         inputContent.append("위 데이터들을 기반으로 나의 창업 계획에 대한 너의 의견은 어떠한지 듣고싶어. ");
