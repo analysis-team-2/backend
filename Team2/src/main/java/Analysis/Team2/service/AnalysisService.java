@@ -1,5 +1,6 @@
 package Analysis.Team2.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.hibernate.dialect.OracleTypes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,20 +9,22 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
-    private static final String API_KEY = System.getenv("API_KEY");
+
+        private static final String API_KEY = System.getenv("API_KEY");
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -43,6 +46,7 @@ public class AnalysisService {
         }
         return CompletableFuture.completedFuture(amount);
     }
+
     @Async
     public CompletableFuture<List<Map<String, Object>>> getDaySalesAsync(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
         DataSource dataSource = jdbcTemplate.getDataSource();
@@ -70,7 +74,6 @@ public class AnalysisService {
         }
         return CompletableFuture.completedFuture(daySales);
     }
-
 
     public CompletableFuture<List<Map<String, Object>>> getGenderAgeDistributionAsync(String city, String dong, String primaryCategory, String secondaryCategory) {
         return CompletableFuture.supplyAsync(() -> {
@@ -212,7 +215,6 @@ public class AnalysisService {
             return result;
         });
     }
-
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getMerchantCntAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
@@ -482,75 +484,110 @@ public class AnalysisService {
     }
 
     @Async
-    public CompletableFuture<List<Map<String, Object>>> getEstimatedAmt(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
-        DataSource dataSource = jdbcTemplate.getDataSource();
+    public CompletableFuture<List<Map<String, Object>>> getEstimatedAmtAsync(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Map<String, Object>> result = new ArrayList<>();
+            DataSource dataSource = jdbcTemplate.getDataSource();
 
-        Long admiNum = null;
-        String tpbuzNum = null;
-        Double cnt = null;
-        Double totalPop = null;
-        Double operPer = null;
-        Double closPer = null;
-        String indc = null;
+            try (Connection conn = dataSource.getConnection();
+                 CallableStatement cstmt = conn.prepareCall("{call proc_estimated_amt(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}")) {
 
-        try (Connection conn = dataSource.getConnection();
-             CallableStatement callableStatement = conn.prepareCall("{ call proc_estimated_amt(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) }")) {
+                cstmt.setString(1, city);
+                cstmt.setString(2, adminiDistrict);
+                cstmt.setString(3, primaryBusiness);
+                cstmt.setString(4, secondaryBusiness);
+                cstmt.registerOutParameter(5, Types.NUMERIC);
+                cstmt.registerOutParameter(6, Types.VARCHAR);
+                cstmt.registerOutParameter(7, Types.NUMERIC);
+                cstmt.registerOutParameter(8, Types.NUMERIC);
+                cstmt.registerOutParameter(9, Types.NUMERIC);
+                cstmt.registerOutParameter(10, Types.NUMERIC);
+                cstmt.registerOutParameter(11, Types.VARCHAR);
 
-            // 입력 파라미터 설정
-            callableStatement.setString(1, city);
-            callableStatement.setString(2, adminiDistrict);
-            callableStatement.setString(3, primaryBusiness);
-            callableStatement.setString(4, secondaryBusiness);
+                cstmt.execute();
 
-            // 출력 파라미터 설정
-            callableStatement.registerOutParameter(5, Types.NUMERIC);
-            callableStatement.registerOutParameter(6, Types.VARCHAR);
-            callableStatement.registerOutParameter(7, Types.NUMERIC);
-            callableStatement.registerOutParameter(8, Types.NUMERIC);
-            callableStatement.registerOutParameter(9, Types.NUMERIC);
-            callableStatement.registerOutParameter(10, Types.NUMERIC);
-            callableStatement.registerOutParameter(11, Types.VARCHAR);
+                Long admiNum = cstmt.getLong(5);
+                String tpbuzNum = cstmt.getString(6);
+                Double cnt = cstmt.getDouble(7);
+                Double totalPop = cstmt.getDouble(8);
+                Double operPer = cstmt.getDouble(9);
+                Double closPer = cstmt.getDouble(10);
+                String indc = cstmt.getString(11);
 
+                Map<String, Object> resData = new HashMap<>();
+                resData.put("admiNum", admiNum);
+                resData.put("tpbuzNum", tpbuzNum);
+                resData.put("amt", 1); // Default value, replace if needed
+                resData.put("cnt", cnt);
+                resData.put("totalPop", totalPop);
+                resData.put("operPer", operPer);
+                resData.put("closPer", closPer);
+                resData.put("indc", indc);
 
-            // 프로시저 실행
-            callableStatement.execute();
+                result.add(resData);
 
-            // 출력 파라미터에서 결과 값 읽기
-            admiNum = callableStatement.getLong(5);
-            tpbuzNum = callableStatement.getString(6);
-            cnt = callableStatement.getDouble(7);
-            totalPop = callableStatement.getDouble(8);
-            operPer = callableStatement.getDouble(9);
-            closPer = callableStatement.getDouble(10);
-            indc = callableStatement.getString(11);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
 
-            // 디버그 또는 로깅
-            System.out.println("행정동 코드 : " + admiNum + ", 업종 코드 : " + tpbuzNum);
-            System.out.println("총 인구수 합계 : " + totalPop + ", 매출건수 합계 : " + cnt);
-            System.out.println("운영점포 평균 영업일:  " + operPer + ", 폐업점포 평균 영업일 :" + closPer + ", 상권지표 : " + indc);
+            return result;
+        });
+    }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    @Async
+    public CompletableFuture<Map<String, Object>> getPredictionAsync(Map<String, Object> input) {
+        return CompletableFuture.supplyAsync(() -> {
+            String pythonScriptPath = "ml/predict_amt.py";
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> result = new HashMap<>();
 
-        // 결과를 맵에 넣어서 반환
-        List<Map<String, Object>> res = new ArrayList<>();
-        Map<String, Object> resData = new HashMap<>();
-        resData.put("admiNum", admiNum);
-        resData.put("tpbuzNum", tpbuzNum);
-        resData.put("amt", 1);
-        resData.put("cnt", cnt);
-        resData.put("totalPop", totalPop);
-        resData.put("operPer", operPer);
-        resData.put("closPer", closPer);
-        resData.put("indc", indc);
+            try {
+                // JSON 데이터를 생성
+                String jsonData = objectMapper.writeValueAsString(input);
 
-        res.add(resData);
+                // JSON 데이터를 적절히 이스케이프하여 파이썬 스크립트에 전달
+                String[] command = new String[]{"python", pythonScriptPath, jsonData};
+                ProcessBuilder processBuilder = new ProcessBuilder(command);
+                processBuilder.redirectErrorStream(true);
+                Process process = processBuilder.start();
 
-        return CompletableFuture.completedFuture(res);
+                // 표준 출력 읽기
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                StringBuilder output = new StringBuilder();
+                String line;
+                while ((line = stdInput.readLine()) != null) {
+                    output.append(line);
+                }
+
+                // 에러 출력 읽기
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+                StringBuilder errorOutput = new StringBuilder();
+                while ((line = stdError.readLine()) != null) {
+                    errorOutput.append(line);
+                }
+
+                int exitCode = process.waitFor();
+                System.out.println("Exited with code: " + exitCode);
+
+                if (exitCode == 0) {
+                    result = objectMapper.readValue(output.toString(), Map.class);
+                } else {
+                    result.put("status", "error");
+                    result.put("message", "Python script execution failed with exit code " + exitCode);
+                    result.put("details", errorOutput.toString()); // Add detailed error message
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                result.put("status", "error");
+                result.put("message", e.getMessage());
+            }
+
+            return result;
+        });
     }
 
 
 
 
 }
+

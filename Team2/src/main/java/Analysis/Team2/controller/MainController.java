@@ -8,9 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @CrossOrigin(origins = {"http://changdoc.s3-website-ap-southeast-1.amazonaws.com", "http://localhost:3000"}, allowCredentials = "true")
@@ -29,7 +31,6 @@ public class MainController {
         String category2 = jsonRequest.getString("category2");
         List<String> customerAge = jsonRequest.getJSONArray("customerAge").toList().stream().map(Object::toString).toList();
 
-        // 비동기 작업 시작
         CompletableFuture<List<Map<String, Object>>> daySalesFuture = analysisService.getDaySalesAsync(city, dong, category1, category2);
         CompletableFuture<List<Map<String, Object>>> genderAgeDataFuture = analysisService.getGenderAgeDistributionAsync(city, dong, category1, category2);
         CompletableFuture<List<Map<String, Object>>> hourlySalesFuture = analysisService.getHourlySalesAsync(city, dong, category1, category2);
@@ -43,29 +44,42 @@ public class MainController {
         CompletableFuture<List<Map<String, Object>>> averageFlowpopFuture = analysisService.getAverageFlowpopAsync(city, dong);
         CompletableFuture<List<Map<String, Object>>> customerPercentageChangeFuture = analysisService.getCustomerPercentageChangeAsync(city, dong, category1, category2);
         CompletableFuture<Map<String, Object>> fullBusinessAnalysisFuture = analysisService.getFullBusinessAnalysisAsync(city, dong, category1, category2);
-        CompletableFuture<List<Map<String, Object>>> estimatedAmtFuture = analysisService.getEstimatedAmt(city, dong, category1, category2);
+        CompletableFuture<List<Map<String, Object>>> estimatedAmtFuture = analysisService.getEstimatedAmtAsync(city, dong, category1, category2);
 
-
-        // 모든 비동기 작업이 완료될 때까지 기다림
         return CompletableFuture.allOf(daySalesFuture, genderAgeDataFuture, hourlySalesFuture, maxLiftConsequentFuture, indicatorFuture, merchantFuture, merchantCntFuture, yearAmtFuture, unitPriceCntFuture, recentMonthlySalesFuture, averageFlowpopFuture, customerPercentageChangeFuture, fullBusinessAnalysisFuture, estimatedAmtFuture)
                 .thenCompose(v -> {
+                    List<Map<String, Object>> daySalesData = daySalesFuture.join();
                     List<Map<String, Object>> genderAgeData = genderAgeDataFuture.join();
-                    String gptInputContent = generateGPTInputContent(genderAgeData, customerAge);
-                    return analysisService.getGPTResponseAsync(gptInputContent).thenApply(gptResponse -> {
-                        // 데이터 처리
-                        List<Map<String, Object>> daySalesData = daySalesFuture.join();
-                        List<Map<String, Object>> hourlySalesData = hourlySalesFuture.join();
-                        String maxLiftConsequent = maxLiftConsequentFuture.join();
-                        Map<String, String> indicator = indicatorFuture.join();
-                        Map<String, Integer> merchantData = merchantFuture.join();
-                        List<Map<String, Object>> merchantCntData = merchantCntFuture.join();
-                        List<Map<String, Object>> yearAmtData = yearAmtFuture.join();
-                        List<Map<String, Object>> unitPriceCntData = unitPriceCntFuture.join();
-                        List<Map<String, Object>> recentMonthlySalesData = recentMonthlySalesFuture.join();
-                        List<Map<String, Object>> averageFlowpopData = averageFlowpopFuture.join();
-                        List<Map<String, Object>> customerPercentageChangeData = customerPercentageChangeFuture.join();
-                        Map<String, Object> fullBusinessAnalysisData = fullBusinessAnalysisFuture.join();
-                        List<Map<String, Object>> estimatedAmt = estimatedAmtFuture.join();
+                    List<Map<String, Object>> hourlySalesData = hourlySalesFuture.join();
+                    String maxLiftConsequent = maxLiftConsequentFuture.join();
+                    Map<String, String> indicator = indicatorFuture.join();
+                    Map<String, Integer> merchantData = merchantFuture.join();
+                    List<Map<String, Object>> merchantCntData = merchantCntFuture.join();
+                    List<Map<String, Object>> yearAmtData = yearAmtFuture.join();
+                    List<Map<String, Object>> unitPriceCntData = unitPriceCntFuture.join();
+                    List<Map<String, Object>> recentMonthlySalesData = recentMonthlySalesFuture.join();
+                    List<Map<String, Object>> averageFlowpopData = averageFlowpopFuture.join();
+                    List<Map<String, Object>> customerPercentageChangeData = customerPercentageChangeFuture.join();
+                    Map<String, Object> fullBusinessAnalysisData = fullBusinessAnalysisFuture.join();
+                    List<Map<String, Object>> estimatedAmtData = estimatedAmtFuture.join();
+
+                    Map<String, Object> predictionInput = new HashMap<>();
+                    if (!estimatedAmtData.isEmpty()) {
+                        Map<String, Object> data = estimatedAmtData.get(0);
+                        predictionInput.put("admi_cty_no", new Long[]{(Long) data.get("admiNum")});
+                        predictionInput.put("card_tpbuz_cd", new String[]{(String) data.get("tpbuzNum")});
+                        predictionInput.put("amt", new int[]{((Number) data.get("amt")).intValue()});
+                        predictionInput.put("cnt", new Double[]{((Number) data.get("cnt")).doubleValue()});
+                        predictionInput.put("TOTAL_POPULATION", new Double[]{((Number) data.get("totalPop")).doubleValue()});
+                        predictionInput.put("store_avg_period", new Double[]{((Number) data.get("operPer")).doubleValue()});
+                        predictionInput.put("shutdown_avg_period", new Double[]{((Number) data.get("closPer")).doubleValue()});
+                        predictionInput.put("changing_tag", new String[]{(String) data.get("indc")});
+                    }
+
+                    CompletableFuture<Map<String, Object>> predictionFuture = analysisService.getPredictionAsync(predictionInput);
+
+                    return predictionFuture.thenApply(predictionResult -> {
+                        JSONObject responseJSON = new JSONObject();
 
                         JSONArray daySalesArray = new JSONArray();
                         for (Map<String, Object> daySale : daySalesData) {
@@ -140,62 +154,48 @@ public class MainController {
                             JSONObject customerChangeJSON = new JSONObject();
                             customerChangeJSON.put("sex", customerChange.get("sex"));
                             customerChangeJSON.put("age", customerChange.get("age"));
+                            customerChangeJSON.put("totalCntPrevious", customerChange.get("totalCntPrevious"));
+                            customerChangeJSON.put("totalCntCurrent", customerChange.get("totalCntCurrent"));
                             customerChangeJSON.put("percentageChange", customerChange.get("percentageChange"));
                             customerPercentageChangeArray.put(customerChangeJSON);
                         }
 
-                        JSONArray estimatedAmtArray = new JSONArray();
-                        for (Map<String, Object> amt : estimatedAmt) {
-                            JSONObject amtJSON = new JSONObject();
-                            amtJSON.put("admi_cty_no", amt.get("admiNum"));
-                            amtJSON.put("card_tpbuz_cd", amt.get("tpbuzNum"));
-                            amtJSON.put("amt", amt.get("amt"));
-                            amtJSON.put("cnt", amt.get("cnt"));
-                            amtJSON.put("TOTAL_POPULATION", amt.get("totalPop"));
-                            amtJSON.put("운영점포평균영업기간", amt.get("operPer"));
-                            amtJSON.put("폐업점포평균영업기간", amt.get("closPer"));
-                            amtJSON.put("상권변동지표구분", amt.get("indc"));
-                            estimatedAmtArray.put(amtJSON);
-                        }
+                        responseJSON.put("genderAgeDistribution", genderAgeArray);
+                        responseJSON.put("daySales", daySalesArray);
+                        responseJSON.put("hourlySales", hourlySalesArray);
+                        responseJSON.put("indicator", new JSONObject(indicator));
+                        responseJSON.put("merchantData", new JSONObject(merchantData));
+                        responseJSON.put("merchantCntData", merchantCntArray);
+                        responseJSON.put("yearAmtData", yearAmtArray);
+                        responseJSON.put("unitPriceCntData", unitPriceCntArray);
+                        responseJSON.put("recentMonthlySales", recentMonthlySalesArray);
+                        responseJSON.put("averageFlowpop", averageFlowpopArray);
+                        responseJSON.put("customerPercentageChange", customerPercentageChangeArray);
+                        responseJSON.put("fullBusinessAnalysis", new JSONObject(fullBusinessAnalysisData));
+                        responseJSON.put("predictionResult", predictionResult);
 
+                        String gptInputContent = generateGPTInputContent(genderAgeData, customerAge);
+                        CompletableFuture<String> gptResponseFuture = analysisService.getGPTResponseAsync(gptInputContent);
+                        String gptResponse = gptResponseFuture.join();
 
-                        JSONObject responseJSON = new JSONObject();
-                        if (!genderAgeArray.isEmpty()) {
-                            responseJSON.put("genderAgeDistribution", genderAgeArray);
-                            responseJSON.put("daySales", daySalesArray);
-                            responseJSON.put("hourlySales", hourlySalesArray);
-                            responseJSON.put("associationCategory", maxLiftConsequent);
-                            responseJSON.put("indicator", new JSONObject(indicator)); // indicator 정보 추가
-                            responseJSON.put("merchantData", new JSONObject(merchantData));
-                            responseJSON.put("merchantCntData", merchantCntArray);
-                            responseJSON.put("yearAmtData", yearAmtArray);
-                            responseJSON.put("unitPriceCntData", unitPriceCntArray);
-                            responseJSON.put("recentMonthlySales", recentMonthlySalesArray);
-                            responseJSON.put("averageFlowpop", averageFlowpopArray);
-                            responseJSON.put("customerPercentageChange", customerPercentageChangeArray);
-                            responseJSON.put("fullBusinessAnalysis", new JSONObject(fullBusinessAnalysisData));
-                            JSONObject gptResponseJson = new JSONObject(gptResponse);
-                            String gptContent = gptResponseJson.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
-                            responseJSON.put("gptResponse", gptContent);
-                            responseJSON.put("estimatedAmt", estimatedAmtArray);
-                            responseJSON.put("status", "success");
-                            responseJSON.put("message", "데이터 전달 성공");
-                            return ResponseEntity.ok(responseJSON.toString());
-                        } else {
-                            responseJSON.put("error", "No data found for the given parameters.");
-                            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseJSON.toString());
-                        }
+                        JSONObject gptResponseJSON = new JSONObject(gptResponse);
+                        String gptContent = gptResponseJSON.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+
+                        responseJSON.put("gptResponse", gptContent);
+
+                        responseJSON.put("status", "success");
+                        responseJSON.put("message", "데이터 전달 성공");
+
+                        return ResponseEntity.ok(responseJSON.toString());
                     });
                 });
     }
 
     private String generateGPTInputContent(List<Map<String, Object>> genderAgeData, List<String> customerAge) {
         StringBuilder inputContent = new StringBuilder();
-
-        // customerAge 리스트에 있는 값들을 포함
         inputContent.append("나는 ");
         for (int i = 0; i < customerAge.size(); i++) {
-            inputContent.append(customerAge.get(i)).append("를");
+            inputContent.append(customerAge.get(i)).append("대를");
             if (i < customerAge.size() - 1) {
                 inputContent.append(", ");
             } else {
@@ -206,7 +206,7 @@ public class MainController {
         inputContent.append("다음은 내가 창업하고자 하는 업종의 소비자의 성별/연령대별 고객 비중이야. ");
         inputContent.append("다음 데이터를 기반으로 나의 창업 계획에 대한 너의 의견은 어떠한지 듣고싶어. ");
         inputContent.append("대답은 미사여구를 붙이지말고 부정적인지, 보통인지, 긍정적인지를 신호등색깔(적색,황색,녹색)로만 대답해. ");
-        System.out.println(inputContent);
+
         for (Map<String, Object> data : genderAgeData) {
             inputContent.append(data.get("sex")).append(" | ").append(data.get("ageLabel")).append(" | ").append(data.get("percentage")).append("% ");
         }
