@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class AnalysisService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private static final String API_KEY = System.getenv("API_KEY");
-    private static final String LOG_DIR = "Analysis.Team2/log";
+    private static final String LOG_DIR = "log/GPT_log";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -468,7 +468,7 @@ public class AnalysisService {
                     .readTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
                     .build();
-            System.out.println("API_KEY : " + API_KEY);
+//            System.out.println("API_KEY : " + API_KEY);
             String json = "{ \"model\": \"gpt-4\", \"messages\": [{\"role\": \"user\", \"content\": \"" + inputContent.replace("\"", "\\\"") + "\"}]}";
             RequestBody body = RequestBody.create(json, MediaType.parse("application/json; charset=utf-8"));
             Request request = new Request.Builder()
@@ -603,7 +603,7 @@ public class AnalysisService {
                 }
 
                 int exitCode = process.waitFor();
-                System.out.println("Exited with code: " + exitCode);
+//                System.out.println("Exited with code: " + exitCode);
 
                 if (exitCode == 0) {
                     result = objectMapper.readValue(output.toString(), Map.class);
@@ -629,10 +629,8 @@ public class AnalysisService {
             String pythonScriptPath = "ml/models/timeSeries.py";
             String[] command = new String[]{"python", pythonScriptPath, city, code};
             String currentDir = System.getProperty("user.dir");
-            System.out.println("Current directory: " + currentDir);
             try {
                 // 명령어 출력
-                System.out.println("Executing command: " + String.join(" ", command));
 
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
@@ -653,9 +651,9 @@ public class AnalysisService {
                 }
 
                 int exitCode = process.waitFor();
-                System.out.println("Python script output: " + output.toString());
-                System.out.println("Python script error output: " + errorOutput.toString());
-                System.out.println("Exited with code: " + exitCode);
+//                System.out.println("Python script output: " + output.toString());
+//                System.out.println("Python script error output: " + errorOutput.toString());
+//                System.out.println("Exited with code: " + exitCode);
 
                 if (exitCode == 0) {
                     ObjectMapper mapper = new ObjectMapper();

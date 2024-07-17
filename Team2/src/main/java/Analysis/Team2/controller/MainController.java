@@ -205,7 +205,7 @@ public class MainController {
         StringBuilder inputContent = new StringBuilder();
         inputContent.append("나는 ");
         for (int i = 0; i < customerAge.size(); i++) {
-            inputContent.append(customerAge.get(i)).append("대를");
+            inputContent.append(customerAge.get(i)).append("를");
             if (i < customerAge.size() - 1) {
                 inputContent.append(", ");
             } else {
@@ -214,12 +214,12 @@ public class MainController {
         }
 
         inputContent.append("다음은 내가 창업하고자 하는 업종의 소비자의 성별/연령대별 고객 비중이야. ");
-        inputContent.append("다음 데이터를 기반으로 나의 창업 계획에 대한 너의 의견은 어떠한지 듣고싶어. ");
-        inputContent.append("대답은 미사여구를 붙이지말고 부정적인지, 보통인지, 긍정적인지를 신호등색깔(적색,황색,녹색)로만 대답해. ");
-
         for (Map<String, Object> data : genderAgeData) {
             inputContent.append(data.get("sex")).append(" | ").append(data.get("ageLabel")).append(" | ").append(data.get("percentage")).append("% ");
         }
+        inputContent.append("다음 데이터를 기반으로 나의 창업 계획에 대한 너의 의견은 어떠한지 듣고싶어. ");
+        inputContent.append("대답은 미사여구를 붙이지말고 부정적인지, 보통인지, 긍정적인지를 신호등색깔(적색,황색,녹색)로만 대답해. ");
+
 
         return inputContent.toString();
     }
