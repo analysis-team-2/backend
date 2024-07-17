@@ -11,10 +11,10 @@ def load_and_predict(model_name, item_id):
         # 모델 경로 설정
         model_paths = {
             '광명시': 'ml/models/merged_data_gm',
-            '시흥시': 'merged_data_sh',
-            '수원시': 'merged_data_sw',
-            '안양시': 'merged_data_yy',
-            '화성시': 'merged_data_hs'
+            '시흥시': 'ml/models/merged_data_sh',
+            '수원시': 'ml/models/merged_data_sw',
+            '안양시': 'ml/models/merged_data_yy',
+            '화성시': 'ml/models/merged_data_hs'
         }
 
         if model_name not in model_paths:
@@ -26,7 +26,7 @@ def load_and_predict(model_name, item_id):
         predictor = TimeSeriesPredictor.load(model_path, require_version_match=False)
 
         # 데이터 로드 및 변환
-        file_path = "./train_data_time.csv"
+        file_path = "ml/models/train_data_time.csv"
         df = pd.read_csv(file_path)
 
         df = TimeSeriesDataFrame.from_data_frame(
