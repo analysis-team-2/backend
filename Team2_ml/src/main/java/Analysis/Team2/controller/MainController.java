@@ -183,6 +183,10 @@ public class MainController {
                                     responseJSON.put("predictionResult", predictionResult);
                                     responseJSON.put("timeSeriesPrediction", new JSONArray(timeSeriesPredictionResult));
 
+                                    System.out.println("asdfasdfasdf");
+                                    System.out.println(predictionResult);
+                                    System.out.println("");
+                                    System.out.println(timeSeriesPredictionResult);
                                     String gptInputContent = generateGPTInputContent(genderAgeData, customerAge);
                                     CompletableFuture<String> gptResponseFuture = analysisService.getGPTResponseAsync(gptInputContent);
                                     String gptResponse = gptResponseFuture.join();
