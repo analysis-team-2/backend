@@ -627,7 +627,9 @@ public class AnalysisService {
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             String pythonScriptPath = "ml/models/timeSeries.py";
-            String[] command = new String[]{"python", pythonScriptPath, city, code};
+            String cityName = city.split(" ")[0];
+
+            String[] command = new String[]{"python", pythonScriptPath, cityName, code};
             String currentDir = System.getProperty("user.dir");
             try {
                 // 명령어 출력
