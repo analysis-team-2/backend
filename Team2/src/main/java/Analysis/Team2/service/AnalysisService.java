@@ -591,7 +591,7 @@ public class AnalysisService {
     public CompletableFuture<List<Map<String, Object>>> getTimeSeriesPredictionAsync(String city, String code) {
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
-            String pythonScriptPath = "ml/models/timeSeries.py";
+            String pythonScriptPath = "models/timeSeries.py";
             String[] command = new String[]{"python", pythonScriptPath, city, code};
             String currentDir = System.getProperty("user.dir");
             System.out.println("Current directory: " + currentDir);
