@@ -9,11 +9,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.*;
 import java.sql.Connection;
 import java.util.*;
@@ -475,44 +474,14 @@ public class AnalysisService {
                     .post(body)
                     .build();
 
-            String responseString = null;
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-                responseString = response.body().string();
+                return response.body().string();
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
-
-            // Log inputContent and responseString
-            logToFile(inputContent, responseString);
-
-            return responseString;
         });
-    }
-
-    private void logToFile(String inputContent, String responseString) {
-        String logDir = "Analysis/Team2/log";
-        Path logPath = Paths.get(logDir);
-        try {
-            // Create log directory if it doesn't exist
-            if (!Files.exists(logPath)) {
-                Files.createDirectories(logPath);
-            }
-
-            // Create log file
-            String logFileName = logDir + "/gpt_response.log";
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFileName, true))) {
-                writer.write("Input Content: " + inputContent);
-                writer.newLine();
-                writer.write("Response: " + responseString);
-                writer.newLine();
-                writer.write("----------");
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     @Async
