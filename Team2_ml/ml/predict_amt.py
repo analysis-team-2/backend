@@ -24,7 +24,7 @@ def main():
         data = json.loads(input_data)
 
 #         print(data)  # 디버깅 메시지
-
+  
         df_predict = pd.DataFrame(data)
         df_predict = df_predict.rename(columns={
             'store_avg_period': '운영점포평균영업기간',
