@@ -38,7 +38,6 @@ def main():
             raise FileNotFoundError(f"모델 경로를 찾을 수 없습니다: {model_path}")
 
         predictor2 = TabularPredictor.load(model_path)
-        predictor2.save(model_path)
 
         y_pred = predictor2.predict(df_predict.drop(columns=['amt']))
 
