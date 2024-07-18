@@ -8,7 +8,7 @@ import warnings
 
 def main():
     warnings.filterwarnings("ignore")
-   
+
     logging.getLogger("autogluon").setLevel(logging.CRITICAL)
     logging.getLogger("autogluon.core").setLevel(logging.CRITICAL)
     logging.getLogger("autogluon.tabular").setLevel(logging.CRITICAL)

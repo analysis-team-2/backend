@@ -10,6 +10,7 @@ from datetime import datetime
 
 def load_and_predict(model_name, item_id):
     try:
+
         # 모델 경로 설정
         model_paths = {
             '광명시': 'ml/models/merged_data_gm',
@@ -18,7 +19,6 @@ def load_and_predict(model_name, item_id):
             '안양시': 'ml/models/merged_data_yy',
             '화성시': 'ml/models/merged_data_hs'
         }
-
         if model_name not in model_paths:
             raise ValueError("Invalid model name provided.")
 
