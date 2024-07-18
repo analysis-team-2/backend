@@ -33,6 +33,7 @@ public class AnalysisService {
 
     @Async
     public CompletableFuture<Long> getMonthlySalesAmountAsync(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         DataSource dataSource = jdbcTemplate.getDataSource();
         Long amount = null;
         try (Connection conn = dataSource.getConnection();
@@ -47,11 +48,14 @@ public class AnalysisService {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        long endTime = System.nanoTime();
+        System.out.println("getMonthlySalesAmountAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
         return CompletableFuture.completedFuture(amount);
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getDaySalesAsync(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         DataSource dataSource = jdbcTemplate.getDataSource();
         List<Map<String, Object>> daySales = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
@@ -75,11 +79,14 @@ public class AnalysisService {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        long endTime = System.nanoTime();
+        System.out.println("getDaySalesAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
         return CompletableFuture.completedFuture(daySales);
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getGenderAgeDistributionAsync(String city, String dong, String primaryCategory, String secondaryCategory) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> distribution = new ArrayList<>();
             try (Connection conn = jdbcTemplate.getDataSource().getConnection();
@@ -106,12 +113,15 @@ public class AnalysisService {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+            long endTime = System.nanoTime();
+            System.out.println("getGenderAgeDistributionAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return distribution;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getHourlySalesAsync(String city, String adminDistrict, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             DataSource dataSource = jdbcTemplate.getDataSource();
             List<Map<String, Object>> hourlySales = new ArrayList<>();
@@ -142,12 +152,15 @@ public class AnalysisService {
                 throw new RuntimeException(e);
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getHourlySalesAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return hourlySales;
         });
     }
 
     @Async
     public CompletableFuture<String> getMaxLiftConsequentAsync(String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             DataSource dataSource = jdbcTemplate.getDataSource();
             try (Connection conn = dataSource.getConnection();
@@ -159,6 +172,8 @@ public class AnalysisService {
 
                 cstmt.execute();
 
+                long endTime = System.nanoTime();
+                System.out.println("getMaxLiftConsequentAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
                 return cstmt.getString(3);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -168,6 +183,7 @@ public class AnalysisService {
 
     @Async
     public CompletableFuture<Map<String, String>> getIndicatorAsync(String city_nm, String dong_nm) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             Map<String, String> results = new HashMap<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -183,6 +199,9 @@ public class AnalysisService {
 
                 results.put("v_code", cstmt.getString(3));
                 results.put("v_desc", cstmt.getString(4));
+
+                long endTime = System.nanoTime();
+                System.out.println("getIndicatorAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
                 return results;
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -192,6 +211,7 @@ public class AnalysisService {
 
     @Async
     public CompletableFuture<Map<String, Integer>> getMerchantAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             Map<String, Integer> result = new HashMap<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -217,12 +237,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getMerchantAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getMerchantCntAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -251,12 +274,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getMerchantCntAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getYearAmtAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -285,12 +311,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getYearAmtAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getUnitPriceCntAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -320,12 +349,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getUnitPriceCntAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getRecentMonthlySalesAsync(String city, String dong, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -354,12 +386,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getRecentMonthlySalesAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getAverageFlowpopAsync(String city, String dong) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -387,12 +422,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getAverageFlowpopAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getCustomerPercentageChangeAsync(String cityNm, String admiNm, String tpbuzNm1, String tpbuzNm2) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -422,12 +460,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getCustomerPercentageChangeAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<Map<String, Object>> getFullBusinessAnalysisAsync(String cityNm, String admiNm, String buzMajorNm, String buzMinorNm) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             Map<String, Object> result = new HashMap<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -457,11 +498,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getFullBusinessAnalysisAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
+
     @Async
     public CompletableFuture<String> getGPTResponseAsync(String inputContent) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(30, TimeUnit.SECONDS)
@@ -482,10 +527,14 @@ public class AnalysisService {
                 logToFile(inputContent, responseBody);
 
                 if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+                long endTime = System.nanoTime();
+                System.out.println("getGPTResponseAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
                 return responseBody;
             } catch (Exception e) {
                 e.printStackTrace();
                 logToFile(inputContent, e.getMessage());
+                long endTime = System.nanoTime();
+                System.out.println("getGPTResponseAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
                 return null;
             }
         });
@@ -521,6 +570,7 @@ public class AnalysisService {
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getEstimatedAmtAsync(String city, String adminiDistrict, String primaryBusiness, String secondaryBusiness) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             DataSource dataSource = jdbcTemplate.getDataSource();
@@ -566,12 +616,15 @@ public class AnalysisService {
                 e.printStackTrace();
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getEstimatedAmtAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<Map<String, Object>> getPredictionAsync(Map<String, Object> input) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             String pythonScriptPath = "ml/predict_amt.py";
             ObjectMapper objectMapper = new ObjectMapper();
@@ -618,12 +671,15 @@ public class AnalysisService {
                 result.put("message", e.getMessage());
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getPredictionAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
 
     @Async
     public CompletableFuture<List<Map<String, Object>>> getTimeSeriesPredictionAsync(String city, String code) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             List<Map<String, Object>> result = new ArrayList<>();
             String pythonScriptPath = "ml/models/timeSeries.py";
@@ -667,6 +723,8 @@ public class AnalysisService {
                 throw new RuntimeException(e);
             }
 
+            long endTime = System.nanoTime();
+            System.out.println("getTimeSeriesPredictionAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return result;
         });
     }
@@ -674,6 +732,7 @@ public class AnalysisService {
 
     @Async
     public CompletableFuture<String> getCodeAsync(String mainNm, String sumNm) {
+        long startTime = System.nanoTime();
         return CompletableFuture.supplyAsync(() -> {
             DataSource dataSource = jdbcTemplate.getDataSource();
             String code = null;
@@ -687,6 +746,8 @@ public class AnalysisService {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+            long endTime = System.nanoTime();
+            System.out.println("getCodeAsync execution time: " + (endTime - startTime) / 1_000_000 + " ms");
             return code;
         });
     }
