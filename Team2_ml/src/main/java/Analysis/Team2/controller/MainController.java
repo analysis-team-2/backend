@@ -80,6 +80,7 @@ public class MainController {
                         }
 
                         CompletableFuture<Map<String, Object>> predictionFuture = analysisService.getPredictionAsync(predictionInput);
+                        System.out.println(predictionInput);
                         CompletableFuture<List<Map<String, Object>>> timeSeriesPredictionFuture = analysisService.getTimeSeriesPredictionAsync(city, code);
 
                         return CompletableFuture.allOf(predictionFuture, timeSeriesPredictionFuture)
