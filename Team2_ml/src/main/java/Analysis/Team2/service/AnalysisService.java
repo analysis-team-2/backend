@@ -633,7 +633,7 @@ public class AnalysisService {
             try {
                 // JSON 데이터를 생성
                 String jsonData = objectMapper.writeValueAsString(input);
-
+                System.out.println(jsonData);
                 // JSON 데이터를 적절히 이스케이프하여 파이썬 스크립트에 전달
                 String[] command = new String[]{"python", pythonScriptPath, jsonData};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
